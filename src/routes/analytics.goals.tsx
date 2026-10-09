@@ -32,7 +32,7 @@ function Page() {
               <div className="grid gap-1.5"><Label htmlFor="t">Target (UGX)</Label><Input id="t" type="number" value={target} onChange={(e) => setTarget(e.target.value)} /></div>
             </div>
             <DialogFooter><Button onClick={() => {
-              if (!name || !Number(target)) return toast.error("Name and a positive target are required");
+              if (!name || !Number(target)) { toast.error("Name and a positive target are required"); return; }
               setGoals([...goals, { name, target: Number(target), actual: 0, unit: "money" }]); setOpen(false); setName(""); setTarget(""); toast.success("Goal created");
             }}>Create goal</Button></DialogFooter>
           </DialogContent>

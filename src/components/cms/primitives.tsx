@@ -19,7 +19,7 @@ export function PageHeader({ title, description, actions, eyebrow }: {
 }
 
 export function Panel({ title, description, actions, children, className, flush }: {
-  title?: string; description?: string; actions?: ReactNode; children: ReactNode; className?: string; flush?: boolean;
+  title?: string | undefined; description?: string | undefined; actions?: ReactNode; children: ReactNode; className?: string | undefined; flush?: boolean | undefined;
 }) {
   return (
     <section className={cn("rounded-lg border bg-card shadow-soft", className)}>

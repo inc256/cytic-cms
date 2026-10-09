@@ -8,7 +8,7 @@ import { Panel } from "./primitives";
 
 export type SettingField = { id: string; label: string; value: string | boolean; help?: string; long?: boolean };
 
-export function SettingsSection({ title, description, fields }: { title: string; description?: string; fields: SettingField[] }) {
+export function SettingsSection({ title, description, fields }: { title: string; description?: string | undefined; fields: SettingField[] }) {
   return (
     <Panel title={title} description={description}>
       <form className="grid gap-5 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); toast.success(`${title} saved`, { description: "Demo session only." }); }}>

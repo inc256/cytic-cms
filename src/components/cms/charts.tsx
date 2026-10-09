@@ -95,7 +95,7 @@ export function HBar({ data, dataKey, nameKey, money, height = 220 }: { data: ob
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16 }}>
         <CartesianGrid horizontal={false} stroke="var(--border)" />
-        <XAxis type="number" {...axis} tickFormatter={money ? formatCompact : undefined} />
+        <XAxis type="number" {...axis} tickFormatter={money ? formatCompact : (v: number) => String(v)} />
         <YAxis type="category" dataKey={nameKey} {...axis} width={120} />
         <Tooltip {...tip} cursor={{ fill: "var(--muted)" }} formatter={(v: number) => (money ? formatMoney(v) : v)} />
         <Bar dataKey={dataKey} fill="var(--chart-1)" radius={[0, 3, 3, 0]} barSize={18} />

@@ -43,7 +43,7 @@ export function ResourceTable<T extends Row>({
   };
   const save = () => {
     const missing = fields?.find((f) => f.required && !form[f.key]?.trim());
-    if (missing) return toast.error(`${missing.label} is required`);
+    if (missing) { toast.error(`${missing.label} is required`); return; }
     const parsed = Object.fromEntries(Object.entries(form).map(([k, v]) => {
       const f = fields?.find((x) => x.key === k);
       return [k, f?.type === "number" ? Number(v) : v];

@@ -62,7 +62,7 @@ function Overview() {
         <Panel title="Recent activity" flush className="lg:col-span-2">
           <ul className="divide-y">
             {activity.map((a) => {
-              const I = ICONS[a.kind];
+              const I = ICONS[a.kind] ?? Inbox;
               return (
                 <li key={a.text} className="flex items-center gap-3 px-5 py-3">
                   <span className="grid size-8 place-items-center rounded-md bg-primary-subtle text-primary"><I className="size-4" /></span>

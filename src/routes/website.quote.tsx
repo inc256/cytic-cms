@@ -44,7 +44,7 @@ function Page() {
             <ul className="space-y-4">{SERVICES.map((s) => (
               <li key={s.id} className="flex items-start justify-between gap-3">
                 <div><Label htmlFor={s.id} className="text-sm">{s.name}</Label><p className="text-xs text-muted-foreground">{s.short}</p></div>
-                <Switch id={s.id} checked={avail[s.id]} onCheckedChange={(v) => setAvail({ ...avail, [s.id]: v })} />
+                <Switch id={s.id} checked={avail[s.id] ?? false} onCheckedChange={(v) => setAvail({ ...avail, [s.id]: v })} />
               </li>
             ))}</ul>
           </Panel>
