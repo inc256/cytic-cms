@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as UsersRouteImport } from './routes/users'
 import { Route as AnalyticsFinanceRouteImport } from './routes/analytics.finance'
 import { Route as AnalyticsGoalsRouteImport } from './routes/analytics.goals'
 import { Route as AnalyticsPerformanceRouteImport } from './routes/analytics.performance'
@@ -17,15 +19,29 @@ import { Route as AnalyticsReceiptsRouteImport } from './routes/analytics.receip
 import { Route as AnalyticsServicesRouteImport } from './routes/analytics.services'
 import { Route as AnalyticsTrendsRouteImport } from './routes/analytics.trends'
 import { Route as WebsiteBlogRouteImport } from './routes/website.blog'
+import { Route as WebsiteInquiriesRouteImport } from './routes/website.inquiries'
 import { Route as WebsiteMediaRouteImport } from './routes/website.media'
 import { Route as WebsitePagesRouteImport } from './routes/website.pages'
 import { Route as WebsitePortfolioRouteImport } from './routes/website.portfolio'
+import { Route as WebsiteProposalsRouteImport } from './routes/website.proposals'
 import { Route as WebsiteQuoteRouteImport } from './routes/website.quote'
+import { Route as WebsiteSeoRouteImport } from './routes/website.seo'
 import { Route as WebsiteServicesRouteImport } from './routes/website.services'
+import { Route as WebsiteSettingsRouteImport } from './routes/website.settings'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnalyticsFinanceRoute = AnalyticsFinanceRouteImport.update({
@@ -63,6 +79,11 @@ const WebsiteBlogRoute = WebsiteBlogRouteImport.update({
   path: '/website/blog',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WebsiteInquiriesRoute = WebsiteInquiriesRouteImport.update({
+  id: '/website/inquiries',
+  path: '/website/inquiries',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WebsiteMediaRoute = WebsiteMediaRouteImport.update({
   id: '/website/media',
   path: '/website/media',
@@ -78,9 +99,19 @@ const WebsitePortfolioRoute = WebsitePortfolioRouteImport.update({
   path: '/website/portfolio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WebsiteProposalsRoute = WebsiteProposalsRouteImport.update({
+  id: '/website/proposals',
+  path: '/website/proposals',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WebsiteQuoteRoute = WebsiteQuoteRouteImport.update({
   id: '/website/quote',
   path: '/website/quote',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WebsiteSeoRoute = WebsiteSeoRouteImport.update({
+  id: '/website/seo',
+  path: '/website/seo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WebsiteServicesRoute = WebsiteServicesRouteImport.update({
@@ -88,9 +119,16 @@ const WebsiteServicesRoute = WebsiteServicesRouteImport.update({
   path: '/website/services',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WebsiteSettingsRoute = WebsiteSettingsRouteImport.update({
+  id: '/website/settings',
+  path: '/website/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
+  '/users': typeof UsersRoute
   '/analytics/finance': typeof AnalyticsFinanceRoute
   '/analytics/goals': typeof AnalyticsGoalsRoute
   '/analytics/performance': typeof AnalyticsPerformanceRoute
@@ -98,14 +136,20 @@ export interface FileRoutesByFullPath {
   '/analytics/services': typeof AnalyticsServicesRoute
   '/analytics/trends': typeof AnalyticsTrendsRoute
   '/website/blog': typeof WebsiteBlogRoute
+  '/website/inquiries': typeof WebsiteInquiriesRoute
   '/website/media': typeof WebsiteMediaRoute
   '/website/pages': typeof WebsitePagesRoute
   '/website/portfolio': typeof WebsitePortfolioRoute
+  '/website/proposals': typeof WebsiteProposalsRoute
   '/website/quote': typeof WebsiteQuoteRoute
+  '/website/seo': typeof WebsiteSeoRoute
   '/website/services': typeof WebsiteServicesRoute
+  '/website/settings': typeof WebsiteSettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
+  '/users': typeof UsersRoute
   '/analytics/finance': typeof AnalyticsFinanceRoute
   '/analytics/goals': typeof AnalyticsGoalsRoute
   '/analytics/performance': typeof AnalyticsPerformanceRoute
@@ -113,15 +157,21 @@ export interface FileRoutesByTo {
   '/analytics/services': typeof AnalyticsServicesRoute
   '/analytics/trends': typeof AnalyticsTrendsRoute
   '/website/blog': typeof WebsiteBlogRoute
+  '/website/inquiries': typeof WebsiteInquiriesRoute
   '/website/media': typeof WebsiteMediaRoute
   '/website/pages': typeof WebsitePagesRoute
   '/website/portfolio': typeof WebsitePortfolioRoute
+  '/website/proposals': typeof WebsiteProposalsRoute
   '/website/quote': typeof WebsiteQuoteRoute
+  '/website/seo': typeof WebsiteSeoRoute
   '/website/services': typeof WebsiteServicesRoute
+  '/website/settings': typeof WebsiteSettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
+  '/users': typeof UsersRoute
   '/analytics/finance': typeof AnalyticsFinanceRoute
   '/analytics/goals': typeof AnalyticsGoalsRoute
   '/analytics/performance': typeof AnalyticsPerformanceRoute
@@ -129,16 +179,22 @@ export interface FileRoutesById {
   '/analytics/services': typeof AnalyticsServicesRoute
   '/analytics/trends': typeof AnalyticsTrendsRoute
   '/website/blog': typeof WebsiteBlogRoute
+  '/website/inquiries': typeof WebsiteInquiriesRoute
   '/website/media': typeof WebsiteMediaRoute
   '/website/pages': typeof WebsitePagesRoute
   '/website/portfolio': typeof WebsitePortfolioRoute
+  '/website/proposals': typeof WebsiteProposalsRoute
   '/website/quote': typeof WebsiteQuoteRoute
+  '/website/seo': typeof WebsiteSeoRoute
   '/website/services': typeof WebsiteServicesRoute
+  '/website/settings': typeof WebsiteSettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/settings'
+    | '/users'
     | '/analytics/finance'
     | '/analytics/goals'
     | '/analytics/performance'
@@ -146,14 +202,20 @@ export interface FileRouteTypes {
     | '/analytics/services'
     | '/analytics/trends'
     | '/website/blog'
+    | '/website/inquiries'
     | '/website/media'
     | '/website/pages'
     | '/website/portfolio'
+    | '/website/proposals'
     | '/website/quote'
+    | '/website/seo'
     | '/website/services'
+    | '/website/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/settings'
+    | '/users'
     | '/analytics/finance'
     | '/analytics/goals'
     | '/analytics/performance'
@@ -161,14 +223,20 @@ export interface FileRouteTypes {
     | '/analytics/services'
     | '/analytics/trends'
     | '/website/blog'
+    | '/website/inquiries'
     | '/website/media'
     | '/website/pages'
     | '/website/portfolio'
+    | '/website/proposals'
     | '/website/quote'
+    | '/website/seo'
     | '/website/services'
+    | '/website/settings'
   id:
     | '__root__'
     | '/'
+    | '/settings'
+    | '/users'
     | '/analytics/finance'
     | '/analytics/goals'
     | '/analytics/performance'
@@ -176,15 +244,21 @@ export interface FileRouteTypes {
     | '/analytics/services'
     | '/analytics/trends'
     | '/website/blog'
+    | '/website/inquiries'
     | '/website/media'
     | '/website/pages'
     | '/website/portfolio'
+    | '/website/proposals'
     | '/website/quote'
+    | '/website/seo'
     | '/website/services'
+    | '/website/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SettingsRoute: typeof SettingsRoute
+  UsersRoute: typeof UsersRoute
   AnalyticsFinanceRoute: typeof AnalyticsFinanceRoute
   AnalyticsGoalsRoute: typeof AnalyticsGoalsRoute
   AnalyticsPerformanceRoute: typeof AnalyticsPerformanceRoute
@@ -192,11 +266,15 @@ export interface RootRouteChildren {
   AnalyticsServicesRoute: typeof AnalyticsServicesRoute
   AnalyticsTrendsRoute: typeof AnalyticsTrendsRoute
   WebsiteBlogRoute: typeof WebsiteBlogRoute
+  WebsiteInquiriesRoute: typeof WebsiteInquiriesRoute
   WebsiteMediaRoute: typeof WebsiteMediaRoute
   WebsitePagesRoute: typeof WebsitePagesRoute
   WebsitePortfolioRoute: typeof WebsitePortfolioRoute
+  WebsiteProposalsRoute: typeof WebsiteProposalsRoute
   WebsiteQuoteRoute: typeof WebsiteQuoteRoute
+  WebsiteSeoRoute: typeof WebsiteSeoRoute
   WebsiteServicesRoute: typeof WebsiteServicesRoute
+  WebsiteSettingsRoute: typeof WebsiteSettingsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -206,6 +284,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/analytics/finance': {
@@ -257,6 +349,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WebsiteBlogRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/website/inquiries': {
+      id: '/website/inquiries'
+      path: '/website/inquiries'
+      fullPath: '/website/inquiries'
+      preLoaderRoute: typeof WebsiteInquiriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/website/media': {
       id: '/website/media'
       path: '/website/media'
@@ -278,11 +377,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WebsitePortfolioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/website/proposals': {
+      id: '/website/proposals'
+      path: '/website/proposals'
+      fullPath: '/website/proposals'
+      preLoaderRoute: typeof WebsiteProposalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/website/quote': {
       id: '/website/quote'
       path: '/website/quote'
       fullPath: '/website/quote'
       preLoaderRoute: typeof WebsiteQuoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/website/seo': {
+      id: '/website/seo'
+      path: '/website/seo'
+      fullPath: '/website/seo'
+      preLoaderRoute: typeof WebsiteSeoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/website/services': {
@@ -292,11 +405,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WebsiteServicesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/website/settings': {
+      id: '/website/settings'
+      path: '/website/settings'
+      fullPath: '/website/settings'
+      preLoaderRoute: typeof WebsiteSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SettingsRoute: SettingsRoute,
+  UsersRoute: UsersRoute,
   AnalyticsFinanceRoute: AnalyticsFinanceRoute,
   AnalyticsGoalsRoute: AnalyticsGoalsRoute,
   AnalyticsPerformanceRoute: AnalyticsPerformanceRoute,
@@ -304,11 +426,15 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsServicesRoute: AnalyticsServicesRoute,
   AnalyticsTrendsRoute: AnalyticsTrendsRoute,
   WebsiteBlogRoute: WebsiteBlogRoute,
+  WebsiteInquiriesRoute: WebsiteInquiriesRoute,
   WebsiteMediaRoute: WebsiteMediaRoute,
   WebsitePagesRoute: WebsitePagesRoute,
   WebsitePortfolioRoute: WebsitePortfolioRoute,
+  WebsiteProposalsRoute: WebsiteProposalsRoute,
   WebsiteQuoteRoute: WebsiteQuoteRoute,
+  WebsiteSeoRoute: WebsiteSeoRoute,
   WebsiteServicesRoute: WebsiteServicesRoute,
+  WebsiteSettingsRoute: WebsiteSettingsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
