@@ -10,6 +10,11 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { AppSidebar } from "@/components/cms/app-sidebar";
+import { Topbar } from "@/components/cms/topbar";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -78,20 +83,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "CYTIC Creatives CMS" },
+      { name: "description", content: "Internal workspace for CYTIC Creatives." },
+      { name: "author", content: "CYTIC Creatives" },
+      { property: "og:title", content: "CYTIC Creatives CMS" },
+      { property: "og:description", content: "Internal workspace for CYTIC Creatives." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600&display=swap" },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
@@ -121,7 +128,18 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <TooltipProvider delayDuration={200}>
+        <SidebarProvider>
+          <AppSidebar />
+          <SidebarInset className="min-w-0 bg-background">
+            <Topbar />
+            <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 md:px-8 md:py-8">
+              <Outlet />
+            </main>
+          </SidebarInset>
+        </SidebarProvider>
+        <Toaster position="bottom-right" />
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }

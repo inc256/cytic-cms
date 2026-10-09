@@ -10,33 +10,271 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as UsersRouteImport } from './routes/users'
+import { Route as AnalyticsFinanceRouteImport } from './routes/analytics.finance'
+import { Route as AnalyticsGoalsRouteImport } from './routes/analytics.goals'
+import { Route as AnalyticsPerformanceRouteImport } from './routes/analytics.performance'
+import { Route as AnalyticsReceiptsRouteImport } from './routes/analytics.receipts'
+import { Route as AnalyticsServicesRouteImport } from './routes/analytics.services'
+import { Route as AnalyticsTrendsRouteImport } from './routes/analytics.trends'
+import { Route as WebsiteBlogRouteImport } from './routes/website.blog'
+import { Route as WebsiteInquiriesRouteImport } from './routes/website.inquiries'
+import { Route as WebsiteMediaRouteImport } from './routes/website.media'
+import { Route as WebsitePagesRouteImport } from './routes/website.pages'
+import { Route as WebsitePortfolioRouteImport } from './routes/website.portfolio'
+import { Route as WebsiteProposalsRouteImport } from './routes/website.proposals'
+import { Route as WebsiteQuoteRouteImport } from './routes/website.quote'
+import { Route as WebsiteSeoRouteImport } from './routes/website.seo'
+import { Route as WebsiteServicesRouteImport } from './routes/website.services'
+import { Route as WebsiteSettingsRouteImport } from './routes/website.settings'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsFinanceRoute = AnalyticsFinanceRouteImport.update({
+  id: '/analytics/finance',
+  path: '/analytics/finance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsGoalsRoute = AnalyticsGoalsRouteImport.update({
+  id: '/analytics/goals',
+  path: '/analytics/goals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsPerformanceRoute = AnalyticsPerformanceRouteImport.update({
+  id: '/analytics/performance',
+  path: '/analytics/performance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsReceiptsRoute = AnalyticsReceiptsRouteImport.update({
+  id: '/analytics/receipts',
+  path: '/analytics/receipts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsServicesRoute = AnalyticsServicesRouteImport.update({
+  id: '/analytics/services',
+  path: '/analytics/services',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsTrendsRoute = AnalyticsTrendsRouteImport.update({
+  id: '/analytics/trends',
+  path: '/analytics/trends',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WebsiteBlogRoute = WebsiteBlogRouteImport.update({
+  id: '/website/blog',
+  path: '/website/blog',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WebsiteInquiriesRoute = WebsiteInquiriesRouteImport.update({
+  id: '/website/inquiries',
+  path: '/website/inquiries',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WebsiteMediaRoute = WebsiteMediaRouteImport.update({
+  id: '/website/media',
+  path: '/website/media',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WebsitePagesRoute = WebsitePagesRouteImport.update({
+  id: '/website/pages',
+  path: '/website/pages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WebsitePortfolioRoute = WebsitePortfolioRouteImport.update({
+  id: '/website/portfolio',
+  path: '/website/portfolio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WebsiteProposalsRoute = WebsiteProposalsRouteImport.update({
+  id: '/website/proposals',
+  path: '/website/proposals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WebsiteQuoteRoute = WebsiteQuoteRouteImport.update({
+  id: '/website/quote',
+  path: '/website/quote',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WebsiteSeoRoute = WebsiteSeoRouteImport.update({
+  id: '/website/seo',
+  path: '/website/seo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WebsiteServicesRoute = WebsiteServicesRouteImport.update({
+  id: '/website/services',
+  path: '/website/services',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WebsiteSettingsRoute = WebsiteSettingsRouteImport.update({
+  id: '/website/settings',
+  path: '/website/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
+  '/users': typeof UsersRoute
+  '/analytics/finance': typeof AnalyticsFinanceRoute
+  '/analytics/goals': typeof AnalyticsGoalsRoute
+  '/analytics/performance': typeof AnalyticsPerformanceRoute
+  '/analytics/receipts': typeof AnalyticsReceiptsRoute
+  '/analytics/services': typeof AnalyticsServicesRoute
+  '/analytics/trends': typeof AnalyticsTrendsRoute
+  '/website/blog': typeof WebsiteBlogRoute
+  '/website/inquiries': typeof WebsiteInquiriesRoute
+  '/website/media': typeof WebsiteMediaRoute
+  '/website/pages': typeof WebsitePagesRoute
+  '/website/portfolio': typeof WebsitePortfolioRoute
+  '/website/proposals': typeof WebsiteProposalsRoute
+  '/website/quote': typeof WebsiteQuoteRoute
+  '/website/seo': typeof WebsiteSeoRoute
+  '/website/services': typeof WebsiteServicesRoute
+  '/website/settings': typeof WebsiteSettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
+  '/users': typeof UsersRoute
+  '/analytics/finance': typeof AnalyticsFinanceRoute
+  '/analytics/goals': typeof AnalyticsGoalsRoute
+  '/analytics/performance': typeof AnalyticsPerformanceRoute
+  '/analytics/receipts': typeof AnalyticsReceiptsRoute
+  '/analytics/services': typeof AnalyticsServicesRoute
+  '/analytics/trends': typeof AnalyticsTrendsRoute
+  '/website/blog': typeof WebsiteBlogRoute
+  '/website/inquiries': typeof WebsiteInquiriesRoute
+  '/website/media': typeof WebsiteMediaRoute
+  '/website/pages': typeof WebsitePagesRoute
+  '/website/portfolio': typeof WebsitePortfolioRoute
+  '/website/proposals': typeof WebsiteProposalsRoute
+  '/website/quote': typeof WebsiteQuoteRoute
+  '/website/seo': typeof WebsiteSeoRoute
+  '/website/services': typeof WebsiteServicesRoute
+  '/website/settings': typeof WebsiteSettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
+  '/users': typeof UsersRoute
+  '/analytics/finance': typeof AnalyticsFinanceRoute
+  '/analytics/goals': typeof AnalyticsGoalsRoute
+  '/analytics/performance': typeof AnalyticsPerformanceRoute
+  '/analytics/receipts': typeof AnalyticsReceiptsRoute
+  '/analytics/services': typeof AnalyticsServicesRoute
+  '/analytics/trends': typeof AnalyticsTrendsRoute
+  '/website/blog': typeof WebsiteBlogRoute
+  '/website/inquiries': typeof WebsiteInquiriesRoute
+  '/website/media': typeof WebsiteMediaRoute
+  '/website/pages': typeof WebsitePagesRoute
+  '/website/portfolio': typeof WebsitePortfolioRoute
+  '/website/proposals': typeof WebsiteProposalsRoute
+  '/website/quote': typeof WebsiteQuoteRoute
+  '/website/seo': typeof WebsiteSeoRoute
+  '/website/services': typeof WebsiteServicesRoute
+  '/website/settings': typeof WebsiteSettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/settings'
+    | '/users'
+    | '/analytics/finance'
+    | '/analytics/goals'
+    | '/analytics/performance'
+    | '/analytics/receipts'
+    | '/analytics/services'
+    | '/analytics/trends'
+    | '/website/blog'
+    | '/website/inquiries'
+    | '/website/media'
+    | '/website/pages'
+    | '/website/portfolio'
+    | '/website/proposals'
+    | '/website/quote'
+    | '/website/seo'
+    | '/website/services'
+    | '/website/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/settings'
+    | '/users'
+    | '/analytics/finance'
+    | '/analytics/goals'
+    | '/analytics/performance'
+    | '/analytics/receipts'
+    | '/analytics/services'
+    | '/analytics/trends'
+    | '/website/blog'
+    | '/website/inquiries'
+    | '/website/media'
+    | '/website/pages'
+    | '/website/portfolio'
+    | '/website/proposals'
+    | '/website/quote'
+    | '/website/seo'
+    | '/website/services'
+    | '/website/settings'
+  id:
+    | '__root__'
+    | '/'
+    | '/settings'
+    | '/users'
+    | '/analytics/finance'
+    | '/analytics/goals'
+    | '/analytics/performance'
+    | '/analytics/receipts'
+    | '/analytics/services'
+    | '/analytics/trends'
+    | '/website/blog'
+    | '/website/inquiries'
+    | '/website/media'
+    | '/website/pages'
+    | '/website/portfolio'
+    | '/website/proposals'
+    | '/website/quote'
+    | '/website/seo'
+    | '/website/services'
+    | '/website/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SettingsRoute: typeof SettingsRoute
+  UsersRoute: typeof UsersRoute
+  AnalyticsFinanceRoute: typeof AnalyticsFinanceRoute
+  AnalyticsGoalsRoute: typeof AnalyticsGoalsRoute
+  AnalyticsPerformanceRoute: typeof AnalyticsPerformanceRoute
+  AnalyticsReceiptsRoute: typeof AnalyticsReceiptsRoute
+  AnalyticsServicesRoute: typeof AnalyticsServicesRoute
+  AnalyticsTrendsRoute: typeof AnalyticsTrendsRoute
+  WebsiteBlogRoute: typeof WebsiteBlogRoute
+  WebsiteInquiriesRoute: typeof WebsiteInquiriesRoute
+  WebsiteMediaRoute: typeof WebsiteMediaRoute
+  WebsitePagesRoute: typeof WebsitePagesRoute
+  WebsitePortfolioRoute: typeof WebsitePortfolioRoute
+  WebsiteProposalsRoute: typeof WebsiteProposalsRoute
+  WebsiteQuoteRoute: typeof WebsiteQuoteRoute
+  WebsiteSeoRoute: typeof WebsiteSeoRoute
+  WebsiteServicesRoute: typeof WebsiteServicesRoute
+  WebsiteSettingsRoute: typeof WebsiteSettingsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +286,155 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics/finance': {
+      id: '/analytics/finance'
+      path: '/analytics/finance'
+      fullPath: '/analytics/finance'
+      preLoaderRoute: typeof AnalyticsFinanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics/goals': {
+      id: '/analytics/goals'
+      path: '/analytics/goals'
+      fullPath: '/analytics/goals'
+      preLoaderRoute: typeof AnalyticsGoalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics/performance': {
+      id: '/analytics/performance'
+      path: '/analytics/performance'
+      fullPath: '/analytics/performance'
+      preLoaderRoute: typeof AnalyticsPerformanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics/receipts': {
+      id: '/analytics/receipts'
+      path: '/analytics/receipts'
+      fullPath: '/analytics/receipts'
+      preLoaderRoute: typeof AnalyticsReceiptsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics/services': {
+      id: '/analytics/services'
+      path: '/analytics/services'
+      fullPath: '/analytics/services'
+      preLoaderRoute: typeof AnalyticsServicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics/trends': {
+      id: '/analytics/trends'
+      path: '/analytics/trends'
+      fullPath: '/analytics/trends'
+      preLoaderRoute: typeof AnalyticsTrendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/website/blog': {
+      id: '/website/blog'
+      path: '/website/blog'
+      fullPath: '/website/blog'
+      preLoaderRoute: typeof WebsiteBlogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/website/inquiries': {
+      id: '/website/inquiries'
+      path: '/website/inquiries'
+      fullPath: '/website/inquiries'
+      preLoaderRoute: typeof WebsiteInquiriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/website/media': {
+      id: '/website/media'
+      path: '/website/media'
+      fullPath: '/website/media'
+      preLoaderRoute: typeof WebsiteMediaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/website/pages': {
+      id: '/website/pages'
+      path: '/website/pages'
+      fullPath: '/website/pages'
+      preLoaderRoute: typeof WebsitePagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/website/portfolio': {
+      id: '/website/portfolio'
+      path: '/website/portfolio'
+      fullPath: '/website/portfolio'
+      preLoaderRoute: typeof WebsitePortfolioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/website/proposals': {
+      id: '/website/proposals'
+      path: '/website/proposals'
+      fullPath: '/website/proposals'
+      preLoaderRoute: typeof WebsiteProposalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/website/quote': {
+      id: '/website/quote'
+      path: '/website/quote'
+      fullPath: '/website/quote'
+      preLoaderRoute: typeof WebsiteQuoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/website/seo': {
+      id: '/website/seo'
+      path: '/website/seo'
+      fullPath: '/website/seo'
+      preLoaderRoute: typeof WebsiteSeoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/website/services': {
+      id: '/website/services'
+      path: '/website/services'
+      fullPath: '/website/services'
+      preLoaderRoute: typeof WebsiteServicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/website/settings': {
+      id: '/website/settings'
+      path: '/website/settings'
+      fullPath: '/website/settings'
+      preLoaderRoute: typeof WebsiteSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SettingsRoute: SettingsRoute,
+  UsersRoute: UsersRoute,
+  AnalyticsFinanceRoute: AnalyticsFinanceRoute,
+  AnalyticsGoalsRoute: AnalyticsGoalsRoute,
+  AnalyticsPerformanceRoute: AnalyticsPerformanceRoute,
+  AnalyticsReceiptsRoute: AnalyticsReceiptsRoute,
+  AnalyticsServicesRoute: AnalyticsServicesRoute,
+  AnalyticsTrendsRoute: AnalyticsTrendsRoute,
+  WebsiteBlogRoute: WebsiteBlogRoute,
+  WebsiteInquiriesRoute: WebsiteInquiriesRoute,
+  WebsiteMediaRoute: WebsiteMediaRoute,
+  WebsitePagesRoute: WebsitePagesRoute,
+  WebsitePortfolioRoute: WebsitePortfolioRoute,
+  WebsiteProposalsRoute: WebsiteProposalsRoute,
+  WebsiteQuoteRoute: WebsiteQuoteRoute,
+  WebsiteSeoRoute: WebsiteSeoRoute,
+  WebsiteServicesRoute: WebsiteServicesRoute,
+  WebsiteSettingsRoute: WebsiteSettingsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
