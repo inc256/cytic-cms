@@ -37,14 +37,14 @@ export function ServiceDonut({ height = 240 }: { height?: number }) {
   const total = revenueByService.reduce((a, b) => a + b.value, 0);
   return (
     <div className="flex flex-col items-center gap-4 sm:flex-row">
-      <ResponsiveContainer width="100%" height={height} className="max-w-[220px]">
+      <div className="w-[200px] shrink-0" style={{ height }}><ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie data={revenueByService} dataKey="value" nameKey="service" innerRadius="62%" outerRadius="95%" paddingAngle={2} stroke="none">
             {revenueByService.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
           </Pie>
           <Tooltip {...tip} formatter={(v: number) => formatMoney(v)} />
         </PieChart>
-      </ResponsiveContainer>
+      </ResponsiveContainer></div>
       <ul className="w-full space-y-2.5 text-sm">
         {revenueByService.map((s, i) => (
           <li key={s.service} className="flex items-center gap-2">
