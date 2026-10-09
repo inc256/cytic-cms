@@ -16,6 +16,12 @@ import { Route as AnalyticsPerformanceRouteImport } from './routes/analytics.per
 import { Route as AnalyticsReceiptsRouteImport } from './routes/analytics.receipts'
 import { Route as AnalyticsServicesRouteImport } from './routes/analytics.services'
 import { Route as AnalyticsTrendsRouteImport } from './routes/analytics.trends'
+import { Route as WebsiteBlogRouteImport } from './routes/website.blog'
+import { Route as WebsiteMediaRouteImport } from './routes/website.media'
+import { Route as WebsitePagesRouteImport } from './routes/website.pages'
+import { Route as WebsitePortfolioRouteImport } from './routes/website.portfolio'
+import { Route as WebsiteQuoteRouteImport } from './routes/website.quote'
+import { Route as WebsiteServicesRouteImport } from './routes/website.services'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +58,36 @@ const AnalyticsTrendsRoute = AnalyticsTrendsRouteImport.update({
   path: '/analytics/trends',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WebsiteBlogRoute = WebsiteBlogRouteImport.update({
+  id: '/website/blog',
+  path: '/website/blog',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WebsiteMediaRoute = WebsiteMediaRouteImport.update({
+  id: '/website/media',
+  path: '/website/media',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WebsitePagesRoute = WebsitePagesRouteImport.update({
+  id: '/website/pages',
+  path: '/website/pages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WebsitePortfolioRoute = WebsitePortfolioRouteImport.update({
+  id: '/website/portfolio',
+  path: '/website/portfolio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WebsiteQuoteRoute = WebsiteQuoteRouteImport.update({
+  id: '/website/quote',
+  path: '/website/quote',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WebsiteServicesRoute = WebsiteServicesRouteImport.update({
+  id: '/website/services',
+  path: '/website/services',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +97,12 @@ export interface FileRoutesByFullPath {
   '/analytics/receipts': typeof AnalyticsReceiptsRoute
   '/analytics/services': typeof AnalyticsServicesRoute
   '/analytics/trends': typeof AnalyticsTrendsRoute
+  '/website/blog': typeof WebsiteBlogRoute
+  '/website/media': typeof WebsiteMediaRoute
+  '/website/pages': typeof WebsitePagesRoute
+  '/website/portfolio': typeof WebsitePortfolioRoute
+  '/website/quote': typeof WebsiteQuoteRoute
+  '/website/services': typeof WebsiteServicesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +112,12 @@ export interface FileRoutesByTo {
   '/analytics/receipts': typeof AnalyticsReceiptsRoute
   '/analytics/services': typeof AnalyticsServicesRoute
   '/analytics/trends': typeof AnalyticsTrendsRoute
+  '/website/blog': typeof WebsiteBlogRoute
+  '/website/media': typeof WebsiteMediaRoute
+  '/website/pages': typeof WebsitePagesRoute
+  '/website/portfolio': typeof WebsitePortfolioRoute
+  '/website/quote': typeof WebsiteQuoteRoute
+  '/website/services': typeof WebsiteServicesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +128,12 @@ export interface FileRoutesById {
   '/analytics/receipts': typeof AnalyticsReceiptsRoute
   '/analytics/services': typeof AnalyticsServicesRoute
   '/analytics/trends': typeof AnalyticsTrendsRoute
+  '/website/blog': typeof WebsiteBlogRoute
+  '/website/media': typeof WebsiteMediaRoute
+  '/website/pages': typeof WebsitePagesRoute
+  '/website/portfolio': typeof WebsitePortfolioRoute
+  '/website/quote': typeof WebsiteQuoteRoute
+  '/website/services': typeof WebsiteServicesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +145,12 @@ export interface FileRouteTypes {
     | '/analytics/receipts'
     | '/analytics/services'
     | '/analytics/trends'
+    | '/website/blog'
+    | '/website/media'
+    | '/website/pages'
+    | '/website/portfolio'
+    | '/website/quote'
+    | '/website/services'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +160,12 @@ export interface FileRouteTypes {
     | '/analytics/receipts'
     | '/analytics/services'
     | '/analytics/trends'
+    | '/website/blog'
+    | '/website/media'
+    | '/website/pages'
+    | '/website/portfolio'
+    | '/website/quote'
+    | '/website/services'
   id:
     | '__root__'
     | '/'
@@ -109,6 +175,12 @@ export interface FileRouteTypes {
     | '/analytics/receipts'
     | '/analytics/services'
     | '/analytics/trends'
+    | '/website/blog'
+    | '/website/media'
+    | '/website/pages'
+    | '/website/portfolio'
+    | '/website/quote'
+    | '/website/services'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +191,12 @@ export interface RootRouteChildren {
   AnalyticsReceiptsRoute: typeof AnalyticsReceiptsRoute
   AnalyticsServicesRoute: typeof AnalyticsServicesRoute
   AnalyticsTrendsRoute: typeof AnalyticsTrendsRoute
+  WebsiteBlogRoute: typeof WebsiteBlogRoute
+  WebsiteMediaRoute: typeof WebsiteMediaRoute
+  WebsitePagesRoute: typeof WebsitePagesRoute
+  WebsitePortfolioRoute: typeof WebsitePortfolioRoute
+  WebsiteQuoteRoute: typeof WebsiteQuoteRoute
+  WebsiteServicesRoute: typeof WebsiteServicesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,6 +250,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalyticsTrendsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/website/blog': {
+      id: '/website/blog'
+      path: '/website/blog'
+      fullPath: '/website/blog'
+      preLoaderRoute: typeof WebsiteBlogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/website/media': {
+      id: '/website/media'
+      path: '/website/media'
+      fullPath: '/website/media'
+      preLoaderRoute: typeof WebsiteMediaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/website/pages': {
+      id: '/website/pages'
+      path: '/website/pages'
+      fullPath: '/website/pages'
+      preLoaderRoute: typeof WebsitePagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/website/portfolio': {
+      id: '/website/portfolio'
+      path: '/website/portfolio'
+      fullPath: '/website/portfolio'
+      preLoaderRoute: typeof WebsitePortfolioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/website/quote': {
+      id: '/website/quote'
+      path: '/website/quote'
+      fullPath: '/website/quote'
+      preLoaderRoute: typeof WebsiteQuoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/website/services': {
+      id: '/website/services'
+      path: '/website/services'
+      fullPath: '/website/services'
+      preLoaderRoute: typeof WebsiteServicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -183,6 +303,12 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsReceiptsRoute: AnalyticsReceiptsRoute,
   AnalyticsServicesRoute: AnalyticsServicesRoute,
   AnalyticsTrendsRoute: AnalyticsTrendsRoute,
+  WebsiteBlogRoute: WebsiteBlogRoute,
+  WebsiteMediaRoute: WebsiteMediaRoute,
+  WebsitePagesRoute: WebsitePagesRoute,
+  WebsitePortfolioRoute: WebsitePortfolioRoute,
+  WebsiteQuoteRoute: WebsiteQuoteRoute,
+  WebsiteServicesRoute: WebsiteServicesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
