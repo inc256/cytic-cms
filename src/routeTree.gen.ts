@@ -10,33 +10,115 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AnalyticsFinanceRouteImport } from './routes/analytics.finance'
+import { Route as AnalyticsGoalsRouteImport } from './routes/analytics.goals'
+import { Route as AnalyticsPerformanceRouteImport } from './routes/analytics.performance'
+import { Route as AnalyticsReceiptsRouteImport } from './routes/analytics.receipts'
+import { Route as AnalyticsServicesRouteImport } from './routes/analytics.services'
+import { Route as AnalyticsTrendsRouteImport } from './routes/analytics.trends'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AnalyticsFinanceRoute = AnalyticsFinanceRouteImport.update({
+  id: '/analytics/finance',
+  path: '/analytics/finance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsGoalsRoute = AnalyticsGoalsRouteImport.update({
+  id: '/analytics/goals',
+  path: '/analytics/goals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsPerformanceRoute = AnalyticsPerformanceRouteImport.update({
+  id: '/analytics/performance',
+  path: '/analytics/performance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsReceiptsRoute = AnalyticsReceiptsRouteImport.update({
+  id: '/analytics/receipts',
+  path: '/analytics/receipts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsServicesRoute = AnalyticsServicesRouteImport.update({
+  id: '/analytics/services',
+  path: '/analytics/services',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsTrendsRoute = AnalyticsTrendsRouteImport.update({
+  id: '/analytics/trends',
+  path: '/analytics/trends',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analytics/finance': typeof AnalyticsFinanceRoute
+  '/analytics/goals': typeof AnalyticsGoalsRoute
+  '/analytics/performance': typeof AnalyticsPerformanceRoute
+  '/analytics/receipts': typeof AnalyticsReceiptsRoute
+  '/analytics/services': typeof AnalyticsServicesRoute
+  '/analytics/trends': typeof AnalyticsTrendsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analytics/finance': typeof AnalyticsFinanceRoute
+  '/analytics/goals': typeof AnalyticsGoalsRoute
+  '/analytics/performance': typeof AnalyticsPerformanceRoute
+  '/analytics/receipts': typeof AnalyticsReceiptsRoute
+  '/analytics/services': typeof AnalyticsServicesRoute
+  '/analytics/trends': typeof AnalyticsTrendsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/analytics/finance': typeof AnalyticsFinanceRoute
+  '/analytics/goals': typeof AnalyticsGoalsRoute
+  '/analytics/performance': typeof AnalyticsPerformanceRoute
+  '/analytics/receipts': typeof AnalyticsReceiptsRoute
+  '/analytics/services': typeof AnalyticsServicesRoute
+  '/analytics/trends': typeof AnalyticsTrendsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/analytics/finance'
+    | '/analytics/goals'
+    | '/analytics/performance'
+    | '/analytics/receipts'
+    | '/analytics/services'
+    | '/analytics/trends'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/analytics/finance'
+    | '/analytics/goals'
+    | '/analytics/performance'
+    | '/analytics/receipts'
+    | '/analytics/services'
+    | '/analytics/trends'
+  id:
+    | '__root__'
+    | '/'
+    | '/analytics/finance'
+    | '/analytics/goals'
+    | '/analytics/performance'
+    | '/analytics/receipts'
+    | '/analytics/services'
+    | '/analytics/trends'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnalyticsFinanceRoute: typeof AnalyticsFinanceRoute
+  AnalyticsGoalsRoute: typeof AnalyticsGoalsRoute
+  AnalyticsPerformanceRoute: typeof AnalyticsPerformanceRoute
+  AnalyticsReceiptsRoute: typeof AnalyticsReceiptsRoute
+  AnalyticsServicesRoute: typeof AnalyticsServicesRoute
+  AnalyticsTrendsRoute: typeof AnalyticsTrendsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +130,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/analytics/finance': {
+      id: '/analytics/finance'
+      path: '/analytics/finance'
+      fullPath: '/analytics/finance'
+      preLoaderRoute: typeof AnalyticsFinanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics/goals': {
+      id: '/analytics/goals'
+      path: '/analytics/goals'
+      fullPath: '/analytics/goals'
+      preLoaderRoute: typeof AnalyticsGoalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics/performance': {
+      id: '/analytics/performance'
+      path: '/analytics/performance'
+      fullPath: '/analytics/performance'
+      preLoaderRoute: typeof AnalyticsPerformanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics/receipts': {
+      id: '/analytics/receipts'
+      path: '/analytics/receipts'
+      fullPath: '/analytics/receipts'
+      preLoaderRoute: typeof AnalyticsReceiptsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics/services': {
+      id: '/analytics/services'
+      path: '/analytics/services'
+      fullPath: '/analytics/services'
+      preLoaderRoute: typeof AnalyticsServicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics/trends': {
+      id: '/analytics/trends'
+      path: '/analytics/trends'
+      fullPath: '/analytics/trends'
+      preLoaderRoute: typeof AnalyticsTrendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnalyticsFinanceRoute: AnalyticsFinanceRoute,
+  AnalyticsGoalsRoute: AnalyticsGoalsRoute,
+  AnalyticsPerformanceRoute: AnalyticsPerformanceRoute,
+  AnalyticsReceiptsRoute: AnalyticsReceiptsRoute,
+  AnalyticsServicesRoute: AnalyticsServicesRoute,
+  AnalyticsTrendsRoute: AnalyticsTrendsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
