@@ -10,7 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as TeamRouteImport } from './routes/team'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as AnalyticsFinanceRouteImport } from './routes/analytics.finance'
 import { Route as AnalyticsGoalsRouteImport } from './routes/analytics.goals'
@@ -18,14 +18,20 @@ import { Route as AnalyticsPerformanceRouteImport } from './routes/analytics.per
 import { Route as AnalyticsReceiptsRouteImport } from './routes/analytics.receipts'
 import { Route as AnalyticsServicesRouteImport } from './routes/analytics.services'
 import { Route as AnalyticsTrendsRouteImport } from './routes/analytics.trends'
+import { Route as DesignerWorkspaceIndexRouteImport } from './routes/designer-workspace.index'
+import { Route as DesignerWorkspaceChecklistRouteImport } from './routes/designer-workspace.checklist'
+import { Route as DesignerWorkspaceGuidelinesRouteImport } from './routes/designer-workspace.guidelines'
+import { Route as DesignerWorkspaceLearningRouteImport } from './routes/designer-workspace.learning'
+import { Route as DesignerWorkspaceNoticesRouteImport } from './routes/designer-workspace.notices'
+import { Route as DesignerWorkspacePaletteCreatorRouteImport } from './routes/designer-workspace.palette-creator'
+import { Route as DesignerWorkspacePoliciesRouteImport } from './routes/designer-workspace.policies'
+import { Route as DesignerWorkspaceProceduresRouteImport } from './routes/designer-workspace.procedures'
+import { Route as DesignerWorkspaceResourcesRouteImport } from './routes/designer-workspace.resources'
 import { Route as WebsiteBlogRouteImport } from './routes/website.blog'
 import { Route as WebsiteInquiriesRouteImport } from './routes/website.inquiries'
-import { Route as WebsiteMediaRouteImport } from './routes/website.media'
-import { Route as WebsitePagesRouteImport } from './routes/website.pages'
 import { Route as WebsitePortfolioRouteImport } from './routes/website.portfolio'
 import { Route as WebsiteProposalsRouteImport } from './routes/website.proposals'
 import { Route as WebsiteQuoteRouteImport } from './routes/website.quote'
-import { Route as WebsiteSeoRouteImport } from './routes/website.seo'
 import { Route as WebsiteServicesRouteImport } from './routes/website.services'
 import { Route as WebsiteSettingsRouteImport } from './routes/website.settings'
 
@@ -34,9 +40,9 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+const TeamRoute = TeamRouteImport.update({
+  id: '/team',
+  path: '/team',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UsersRoute = UsersRouteImport.update({
@@ -74,6 +80,59 @@ const AnalyticsTrendsRoute = AnalyticsTrendsRouteImport.update({
   path: '/analytics/trends',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DesignerWorkspaceIndexRoute = DesignerWorkspaceIndexRouteImport.update({
+  id: '/designer-workspace/',
+  path: '/designer-workspace/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignerWorkspaceChecklistRoute =
+  DesignerWorkspaceChecklistRouteImport.update({
+    id: '/designer-workspace/checklist',
+    path: '/designer-workspace/checklist',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DesignerWorkspaceGuidelinesRoute =
+  DesignerWorkspaceGuidelinesRouteImport.update({
+    id: '/designer-workspace/guidelines',
+    path: '/designer-workspace/guidelines',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DesignerWorkspaceLearningRoute =
+  DesignerWorkspaceLearningRouteImport.update({
+    id: '/designer-workspace/learning',
+    path: '/designer-workspace/learning',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DesignerWorkspaceNoticesRoute =
+  DesignerWorkspaceNoticesRouteImport.update({
+    id: '/designer-workspace/notices',
+    path: '/designer-workspace/notices',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DesignerWorkspacePaletteCreatorRoute =
+  DesignerWorkspacePaletteCreatorRouteImport.update({
+    id: '/designer-workspace/palette-creator',
+    path: '/designer-workspace/palette-creator',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DesignerWorkspacePoliciesRoute =
+  DesignerWorkspacePoliciesRouteImport.update({
+    id: '/designer-workspace/policies',
+    path: '/designer-workspace/policies',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DesignerWorkspaceProceduresRoute =
+  DesignerWorkspaceProceduresRouteImport.update({
+    id: '/designer-workspace/procedures',
+    path: '/designer-workspace/procedures',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DesignerWorkspaceResourcesRoute =
+  DesignerWorkspaceResourcesRouteImport.update({
+    id: '/designer-workspace/resources',
+    path: '/designer-workspace/resources',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const WebsiteBlogRoute = WebsiteBlogRouteImport.update({
   id: '/website/blog',
   path: '/website/blog',
@@ -82,16 +141,6 @@ const WebsiteBlogRoute = WebsiteBlogRouteImport.update({
 const WebsiteInquiriesRoute = WebsiteInquiriesRouteImport.update({
   id: '/website/inquiries',
   path: '/website/inquiries',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const WebsiteMediaRoute = WebsiteMediaRouteImport.update({
-  id: '/website/media',
-  path: '/website/media',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const WebsitePagesRoute = WebsitePagesRouteImport.update({
-  id: '/website/pages',
-  path: '/website/pages',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WebsitePortfolioRoute = WebsitePortfolioRouteImport.update({
@@ -109,11 +158,6 @@ const WebsiteQuoteRoute = WebsiteQuoteRouteImport.update({
   path: '/website/quote',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WebsiteSeoRoute = WebsiteSeoRouteImport.update({
-  id: '/website/seo',
-  path: '/website/seo',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const WebsiteServicesRoute = WebsiteServicesRouteImport.update({
   id: '/website/services',
   path: '/website/services',
@@ -127,7 +171,7 @@ const WebsiteSettingsRoute = WebsiteSettingsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
+  '/team': typeof TeamRoute
   '/users': typeof UsersRoute
   '/analytics/finance': typeof AnalyticsFinanceRoute
   '/analytics/goals': typeof AnalyticsGoalsRoute
@@ -135,20 +179,26 @@ export interface FileRoutesByFullPath {
   '/analytics/receipts': typeof AnalyticsReceiptsRoute
   '/analytics/services': typeof AnalyticsServicesRoute
   '/analytics/trends': typeof AnalyticsTrendsRoute
+  '/designer-workspace/checklist': typeof DesignerWorkspaceChecklistRoute
+  '/designer-workspace/guidelines': typeof DesignerWorkspaceGuidelinesRoute
+  '/designer-workspace/learning': typeof DesignerWorkspaceLearningRoute
+  '/designer-workspace/notices': typeof DesignerWorkspaceNoticesRoute
+  '/designer-workspace/palette-creator': typeof DesignerWorkspacePaletteCreatorRoute
+  '/designer-workspace/policies': typeof DesignerWorkspacePoliciesRoute
+  '/designer-workspace/procedures': typeof DesignerWorkspaceProceduresRoute
+  '/designer-workspace/resources': typeof DesignerWorkspaceResourcesRoute
   '/website/blog': typeof WebsiteBlogRoute
   '/website/inquiries': typeof WebsiteInquiriesRoute
-  '/website/media': typeof WebsiteMediaRoute
-  '/website/pages': typeof WebsitePagesRoute
   '/website/portfolio': typeof WebsitePortfolioRoute
   '/website/proposals': typeof WebsiteProposalsRoute
   '/website/quote': typeof WebsiteQuoteRoute
-  '/website/seo': typeof WebsiteSeoRoute
   '/website/services': typeof WebsiteServicesRoute
   '/website/settings': typeof WebsiteSettingsRoute
+  '/designer-workspace/': typeof DesignerWorkspaceIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
+  '/team': typeof TeamRoute
   '/users': typeof UsersRoute
   '/analytics/finance': typeof AnalyticsFinanceRoute
   '/analytics/goals': typeof AnalyticsGoalsRoute
@@ -156,21 +206,27 @@ export interface FileRoutesByTo {
   '/analytics/receipts': typeof AnalyticsReceiptsRoute
   '/analytics/services': typeof AnalyticsServicesRoute
   '/analytics/trends': typeof AnalyticsTrendsRoute
+  '/designer-workspace/checklist': typeof DesignerWorkspaceChecklistRoute
+  '/designer-workspace/guidelines': typeof DesignerWorkspaceGuidelinesRoute
+  '/designer-workspace/learning': typeof DesignerWorkspaceLearningRoute
+  '/designer-workspace/notices': typeof DesignerWorkspaceNoticesRoute
+  '/designer-workspace/palette-creator': typeof DesignerWorkspacePaletteCreatorRoute
+  '/designer-workspace/policies': typeof DesignerWorkspacePoliciesRoute
+  '/designer-workspace/procedures': typeof DesignerWorkspaceProceduresRoute
+  '/designer-workspace/resources': typeof DesignerWorkspaceResourcesRoute
   '/website/blog': typeof WebsiteBlogRoute
   '/website/inquiries': typeof WebsiteInquiriesRoute
-  '/website/media': typeof WebsiteMediaRoute
-  '/website/pages': typeof WebsitePagesRoute
   '/website/portfolio': typeof WebsitePortfolioRoute
   '/website/proposals': typeof WebsiteProposalsRoute
   '/website/quote': typeof WebsiteQuoteRoute
-  '/website/seo': typeof WebsiteSeoRoute
   '/website/services': typeof WebsiteServicesRoute
   '/website/settings': typeof WebsiteSettingsRoute
+  '/designer-workspace': typeof DesignerWorkspaceIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
+  '/team': typeof TeamRoute
   '/users': typeof UsersRoute
   '/analytics/finance': typeof AnalyticsFinanceRoute
   '/analytics/goals': typeof AnalyticsGoalsRoute
@@ -178,22 +234,28 @@ export interface FileRoutesById {
   '/analytics/receipts': typeof AnalyticsReceiptsRoute
   '/analytics/services': typeof AnalyticsServicesRoute
   '/analytics/trends': typeof AnalyticsTrendsRoute
+  '/designer-workspace/checklist': typeof DesignerWorkspaceChecklistRoute
+  '/designer-workspace/guidelines': typeof DesignerWorkspaceGuidelinesRoute
+  '/designer-workspace/learning': typeof DesignerWorkspaceLearningRoute
+  '/designer-workspace/notices': typeof DesignerWorkspaceNoticesRoute
+  '/designer-workspace/palette-creator': typeof DesignerWorkspacePaletteCreatorRoute
+  '/designer-workspace/policies': typeof DesignerWorkspacePoliciesRoute
+  '/designer-workspace/procedures': typeof DesignerWorkspaceProceduresRoute
+  '/designer-workspace/resources': typeof DesignerWorkspaceResourcesRoute
   '/website/blog': typeof WebsiteBlogRoute
   '/website/inquiries': typeof WebsiteInquiriesRoute
-  '/website/media': typeof WebsiteMediaRoute
-  '/website/pages': typeof WebsitePagesRoute
   '/website/portfolio': typeof WebsitePortfolioRoute
   '/website/proposals': typeof WebsiteProposalsRoute
   '/website/quote': typeof WebsiteQuoteRoute
-  '/website/seo': typeof WebsiteSeoRoute
   '/website/services': typeof WebsiteServicesRoute
   '/website/settings': typeof WebsiteSettingsRoute
+  '/designer-workspace/': typeof DesignerWorkspaceIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/settings'
+    | '/team'
     | '/users'
     | '/analytics/finance'
     | '/analytics/goals'
@@ -201,20 +263,26 @@ export interface FileRouteTypes {
     | '/analytics/receipts'
     | '/analytics/services'
     | '/analytics/trends'
+    | '/designer-workspace/checklist'
+    | '/designer-workspace/guidelines'
+    | '/designer-workspace/learning'
+    | '/designer-workspace/notices'
+    | '/designer-workspace/palette-creator'
+    | '/designer-workspace/policies'
+    | '/designer-workspace/procedures'
+    | '/designer-workspace/resources'
     | '/website/blog'
     | '/website/inquiries'
-    | '/website/media'
-    | '/website/pages'
     | '/website/portfolio'
     | '/website/proposals'
     | '/website/quote'
-    | '/website/seo'
     | '/website/services'
     | '/website/settings'
+    | '/designer-workspace/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/settings'
+    | '/team'
     | '/users'
     | '/analytics/finance'
     | '/analytics/goals'
@@ -222,20 +290,26 @@ export interface FileRouteTypes {
     | '/analytics/receipts'
     | '/analytics/services'
     | '/analytics/trends'
+    | '/designer-workspace/checklist'
+    | '/designer-workspace/guidelines'
+    | '/designer-workspace/learning'
+    | '/designer-workspace/notices'
+    | '/designer-workspace/palette-creator'
+    | '/designer-workspace/policies'
+    | '/designer-workspace/procedures'
+    | '/designer-workspace/resources'
     | '/website/blog'
     | '/website/inquiries'
-    | '/website/media'
-    | '/website/pages'
     | '/website/portfolio'
     | '/website/proposals'
     | '/website/quote'
-    | '/website/seo'
     | '/website/services'
     | '/website/settings'
+    | '/designer-workspace'
   id:
     | '__root__'
     | '/'
-    | '/settings'
+    | '/team'
     | '/users'
     | '/analytics/finance'
     | '/analytics/goals'
@@ -243,21 +317,27 @@ export interface FileRouteTypes {
     | '/analytics/receipts'
     | '/analytics/services'
     | '/analytics/trends'
+    | '/designer-workspace/checklist'
+    | '/designer-workspace/guidelines'
+    | '/designer-workspace/learning'
+    | '/designer-workspace/notices'
+    | '/designer-workspace/palette-creator'
+    | '/designer-workspace/policies'
+    | '/designer-workspace/procedures'
+    | '/designer-workspace/resources'
     | '/website/blog'
     | '/website/inquiries'
-    | '/website/media'
-    | '/website/pages'
     | '/website/portfolio'
     | '/website/proposals'
     | '/website/quote'
-    | '/website/seo'
     | '/website/services'
     | '/website/settings'
+    | '/designer-workspace/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  SettingsRoute: typeof SettingsRoute
+  TeamRoute: typeof TeamRoute
   UsersRoute: typeof UsersRoute
   AnalyticsFinanceRoute: typeof AnalyticsFinanceRoute
   AnalyticsGoalsRoute: typeof AnalyticsGoalsRoute
@@ -265,16 +345,22 @@ export interface RootRouteChildren {
   AnalyticsReceiptsRoute: typeof AnalyticsReceiptsRoute
   AnalyticsServicesRoute: typeof AnalyticsServicesRoute
   AnalyticsTrendsRoute: typeof AnalyticsTrendsRoute
+  DesignerWorkspaceChecklistRoute: typeof DesignerWorkspaceChecklistRoute
+  DesignerWorkspaceGuidelinesRoute: typeof DesignerWorkspaceGuidelinesRoute
+  DesignerWorkspaceLearningRoute: typeof DesignerWorkspaceLearningRoute
+  DesignerWorkspaceNoticesRoute: typeof DesignerWorkspaceNoticesRoute
+  DesignerWorkspacePaletteCreatorRoute: typeof DesignerWorkspacePaletteCreatorRoute
+  DesignerWorkspacePoliciesRoute: typeof DesignerWorkspacePoliciesRoute
+  DesignerWorkspaceProceduresRoute: typeof DesignerWorkspaceProceduresRoute
+  DesignerWorkspaceResourcesRoute: typeof DesignerWorkspaceResourcesRoute
   WebsiteBlogRoute: typeof WebsiteBlogRoute
   WebsiteInquiriesRoute: typeof WebsiteInquiriesRoute
-  WebsiteMediaRoute: typeof WebsiteMediaRoute
-  WebsitePagesRoute: typeof WebsitePagesRoute
   WebsitePortfolioRoute: typeof WebsitePortfolioRoute
   WebsiteProposalsRoute: typeof WebsiteProposalsRoute
   WebsiteQuoteRoute: typeof WebsiteQuoteRoute
-  WebsiteSeoRoute: typeof WebsiteSeoRoute
   WebsiteServicesRoute: typeof WebsiteServicesRoute
   WebsiteSettingsRoute: typeof WebsiteSettingsRoute
+  DesignerWorkspaceIndexRoute: typeof DesignerWorkspaceIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -286,11 +372,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
+    '/team': {
+      id: '/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof TeamRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/users': {
@@ -342,6 +428,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalyticsTrendsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/designer-workspace/': {
+      id: '/designer-workspace/'
+      path: '/designer-workspace'
+      fullPath: '/designer-workspace/'
+      preLoaderRoute: typeof DesignerWorkspaceIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/designer-workspace/checklist': {
+      id: '/designer-workspace/checklist'
+      path: '/designer-workspace/checklist'
+      fullPath: '/designer-workspace/checklist'
+      preLoaderRoute: typeof DesignerWorkspaceChecklistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/designer-workspace/guidelines': {
+      id: '/designer-workspace/guidelines'
+      path: '/designer-workspace/guidelines'
+      fullPath: '/designer-workspace/guidelines'
+      preLoaderRoute: typeof DesignerWorkspaceGuidelinesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/designer-workspace/learning': {
+      id: '/designer-workspace/learning'
+      path: '/designer-workspace/learning'
+      fullPath: '/designer-workspace/learning'
+      preLoaderRoute: typeof DesignerWorkspaceLearningRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/designer-workspace/notices': {
+      id: '/designer-workspace/notices'
+      path: '/designer-workspace/notices'
+      fullPath: '/designer-workspace/notices'
+      preLoaderRoute: typeof DesignerWorkspaceNoticesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/designer-workspace/palette-creator': {
+      id: '/designer-workspace/palette-creator'
+      path: '/designer-workspace/palette-creator'
+      fullPath: '/designer-workspace/palette-creator'
+      preLoaderRoute: typeof DesignerWorkspacePaletteCreatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/designer-workspace/policies': {
+      id: '/designer-workspace/policies'
+      path: '/designer-workspace/policies'
+      fullPath: '/designer-workspace/policies'
+      preLoaderRoute: typeof DesignerWorkspacePoliciesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/designer-workspace/procedures': {
+      id: '/designer-workspace/procedures'
+      path: '/designer-workspace/procedures'
+      fullPath: '/designer-workspace/procedures'
+      preLoaderRoute: typeof DesignerWorkspaceProceduresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/designer-workspace/resources': {
+      id: '/designer-workspace/resources'
+      path: '/designer-workspace/resources'
+      fullPath: '/designer-workspace/resources'
+      preLoaderRoute: typeof DesignerWorkspaceResourcesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/website/blog': {
       id: '/website/blog'
       path: '/website/blog'
@@ -354,20 +503,6 @@ declare module '@tanstack/react-router' {
       path: '/website/inquiries'
       fullPath: '/website/inquiries'
       preLoaderRoute: typeof WebsiteInquiriesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/website/media': {
-      id: '/website/media'
-      path: '/website/media'
-      fullPath: '/website/media'
-      preLoaderRoute: typeof WebsiteMediaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/website/pages': {
-      id: '/website/pages'
-      path: '/website/pages'
-      fullPath: '/website/pages'
-      preLoaderRoute: typeof WebsitePagesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/website/portfolio': {
@@ -391,13 +526,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WebsiteQuoteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/website/seo': {
-      id: '/website/seo'
-      path: '/website/seo'
-      fullPath: '/website/seo'
-      preLoaderRoute: typeof WebsiteSeoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/website/services': {
       id: '/website/services'
       path: '/website/services'
@@ -417,7 +545,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  SettingsRoute: SettingsRoute,
+  TeamRoute: TeamRoute,
   UsersRoute: UsersRoute,
   AnalyticsFinanceRoute: AnalyticsFinanceRoute,
   AnalyticsGoalsRoute: AnalyticsGoalsRoute,
@@ -425,16 +553,22 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsReceiptsRoute: AnalyticsReceiptsRoute,
   AnalyticsServicesRoute: AnalyticsServicesRoute,
   AnalyticsTrendsRoute: AnalyticsTrendsRoute,
+  DesignerWorkspaceChecklistRoute: DesignerWorkspaceChecklistRoute,
+  DesignerWorkspaceGuidelinesRoute: DesignerWorkspaceGuidelinesRoute,
+  DesignerWorkspaceLearningRoute: DesignerWorkspaceLearningRoute,
+  DesignerWorkspaceNoticesRoute: DesignerWorkspaceNoticesRoute,
+  DesignerWorkspacePaletteCreatorRoute: DesignerWorkspacePaletteCreatorRoute,
+  DesignerWorkspacePoliciesRoute: DesignerWorkspacePoliciesRoute,
+  DesignerWorkspaceProceduresRoute: DesignerWorkspaceProceduresRoute,
+  DesignerWorkspaceResourcesRoute: DesignerWorkspaceResourcesRoute,
   WebsiteBlogRoute: WebsiteBlogRoute,
   WebsiteInquiriesRoute: WebsiteInquiriesRoute,
-  WebsiteMediaRoute: WebsiteMediaRoute,
-  WebsitePagesRoute: WebsitePagesRoute,
   WebsitePortfolioRoute: WebsitePortfolioRoute,
   WebsiteProposalsRoute: WebsiteProposalsRoute,
   WebsiteQuoteRoute: WebsiteQuoteRoute,
-  WebsiteSeoRoute: WebsiteSeoRoute,
   WebsiteServicesRoute: WebsiteServicesRoute,
   WebsiteSettingsRoute: WebsiteSettingsRoute,
+  DesignerWorkspaceIndexRoute: DesignerWorkspaceIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

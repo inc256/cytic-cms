@@ -86,16 +86,16 @@
   --card-foreground: oklch(0.2 0.012 270);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.2 0.012 270);
-  --primary: oklch(0.24 0.15 270);
-  --primary-hover: oklch(0.19 0.12 270);
-  --primary-subtle: oklch(0.96 0.02 270);
+  --primary: oklch(0.225708 0.143401 264.207);
+  --primary-hover: oklch(0.185 0.12 264.207);
+  --primary-subtle: oklch(0.96 0.02 264.207);
   --primary-foreground: oklch(0.99 0 0);
   --secondary: oklch(0.955 0.006 270);
-  --secondary-foreground: oklch(0.24 0.15 270);
+  --secondary-foreground: oklch(0.225708 0.143401 264.207);
   --muted: oklch(0.96 0.005 85);
   --muted-foreground: oklch(0.52 0.02 260);
-  --accent: oklch(0.96 0.02 270);
-  --accent-foreground: oklch(0.24 0.15 270);
+  --accent: oklch(0.96 0.02 264.207);
+  --accent-foreground: oklch(0.225708 0.143401 264.207);
   --gold: oklch(0.74 0.09 85);
   --gold-foreground: oklch(0.3 0.05 80);
   --sand: oklch(0.9 0.03 80);
@@ -110,20 +110,20 @@
   --destructive-foreground: oklch(0.99 0 0);
   --border: oklch(0.915 0.006 85);
   --input: oklch(0.9 0.006 85);
-  --ring: oklch(0.24 0.15 270);
-  --chart-1: oklch(0.24 0.15 270);
+  --ring: oklch(0.225708 0.143401 264.207);
+  --chart-1: oklch(0.225708 0.143401 264.207);
   --chart-2: oklch(0.74 0.09 85);
   --chart-3: oklch(0.55 0.12 260);
   --chart-4: oklch(0.82 0.04 80);
   --chart-5: oklch(0.58 0.13 155);
   --sidebar: oklch(1 0 0);
   --sidebar-foreground: oklch(0.32 0.015 270);
-  --sidebar-primary: oklch(0.24 0.15 270);
+  --sidebar-primary: oklch(0.225708 0.143401 264.207);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.96 0.02 270);
-  --sidebar-accent-foreground: oklch(0.24 0.15 270);
+  --sidebar-accent: oklch(0.96 0.02 264.207);
+  --sidebar-accent-foreground: oklch(0.225708 0.143401 264.207);
   --sidebar-border: oklch(0.925 0.006 85);
-  --sidebar-ring: oklch(0.24 0.15 270);
+  --sidebar-ring: oklch(0.225708 0.143401 264.207);
   --shadow-soft: 0 1px 2px oklch(0.2 0.02 270 / 0.04), 0 4px 16px -8px oklch(0.2 0.05 270 / 0.08);
 }
 
@@ -139,6 +139,15 @@
 }
 
 @layer base {
-  body { font-family: var(--font-sans); font-feature-settings: "cv11", "ss01"; -webkit-font-smoothing: antialiased; }
-  h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.015em; }
+  body {
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.015em;
+  }
 }

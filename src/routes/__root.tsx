@@ -15,6 +15,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppSidebar } from "@/components/cms/app-sidebar";
 import { Topbar } from "@/components/cms/topbar";
+import { AuthGate } from "@/components/auth/auth-gate";
+import { AuthProvider } from "@/components/auth/auth-provider";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -98,7 +100,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600&display=swap",
+      },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
@@ -128,18 +133,22 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <TooltipProvider delayDuration={200}>
-        <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset className="min-w-0 bg-background">
-            <Topbar />
-            <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 md:px-8 md:py-8">
-              <Outlet />
-            </main>
-          </SidebarInset>
-        </SidebarProvider>
+      <AuthProvider>
+        <AuthGate>
+          <TooltipProvider delayDuration={200}>
+            <SidebarProvider>
+              <AppSidebar />
+              <SidebarInset className="min-w-0 bg-background">
+                <Topbar />
+                <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 md:px-8 md:py-8">
+                  <Outlet />
+                </main>
+              </SidebarInset>
+            </SidebarProvider>
+          </TooltipProvider>
+        </AuthGate>
         <Toaster position="bottom-right" />
-      </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

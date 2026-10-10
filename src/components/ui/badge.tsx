@@ -15,7 +15,6 @@ const badgeVariants = cva(
         danger: "border-transparent bg-destructive-subtle text-destructive",
         brand: "border-transparent bg-primary-subtle text-primary",
         neutral: "border-transparent bg-muted text-muted-foreground",
-        demo: "border-gold/50 bg-sand/40 text-gold-foreground font-medium",
         secondary:
           "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
         destructive:
