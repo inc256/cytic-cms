@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
-import { Pencil, Plus, Trash2, X } from "lucide-react";
+import { useMemo, useState, type FormEvent } from "react";
+import { ChevronDown, ChevronRight, Pencil, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { AnalyticsState } from "@/components/cms/analytics-state";
@@ -14,11 +14,11 @@ import { deleteWebsiteRow, saveWebsiteRow, type WebsiteService } from "@/lib/web
 import { meta } from "@/lib/seo";
 
 export const Route = createFileRoute("/website/services")({
-  head: () => meta("Services & Categories", "Manage service categories stored in Supabase."),
+  head: () => meta("Services", "Manage services and their sub-services."),
   component: Page,
 });
 
-const empty = { name: "", category: "", description: "", status: "Draft", sort_order: "0" };
+const empty = { name: "", parent_id: "", description: "", status: "Draft", sort_order: "0" };
 
 function Page() {
   const {
@@ -31,19 +31,40 @@ function Page() {
   const [form, setForm] = useState(empty);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [expanded, setExpanded] = useState<string[]>([]);
 
-  const edit = (service?: WebsiteService) => {
+  const roots = useMemo(() => services.filter((service) => !service.parent_id), [services]);
+  const childrenByParent = useMemo(() => {
+    const grouped = new Map<string, WebsiteService[]>();
+    for (const service of services) {
+      if (!service.parent_id) continue;
+      const siblings = grouped.get(service.parent_id) ?? [];
+      siblings.push(service);
+      grouped.set(service.parent_id, siblings);
+    }
+    return grouped;
+  }, [services]);
+  const rows = useMemo(
+    () =>
+      roots.flatMap((parent) => [
+        parent,
+        ...(expanded.includes(parent.id) ? (childrenByParent.get(parent.id) ?? []) : []),
+      ]),
+    [childrenByParent, expanded, roots],
+  );
+
+  const edit = (service?: WebsiteService, parentId = "") => {
     setEditing(service ?? null);
     setForm(
       service
         ? {
             name: service.name,
-            category: service.category,
+            parent_id: service.parent_id ?? "",
             description: service.description,
             status: service.status,
             sort_order: String(service.sort_order),
           }
-        : empty,
+        : { ...empty, parent_id: parentId },
     );
     setOpen(true);
   };
@@ -56,7 +77,7 @@ function Page() {
         "cms_website_services",
         {
           name: form.name.trim(),
-          category: form.category.trim(),
+          parent_id: form.parent_id || null,
           description: form.description.trim(),
           status: form.status,
           sort_order: Number(form.sort_order) || 0,
@@ -76,6 +97,16 @@ function Page() {
   };
 
   const remove = async (service: WebsiteService) => {
+    const childCount = childrenByParent.get(service.id)?.length ?? 0;
+    if (
+      !window.confirm(
+        childCount
+          ? `Delete "${service.name}" and its ${childCount} sub-service${childCount === 1 ? "" : "s"}?`
+          : `Delete "${service.name}"?`,
+      )
+    ) {
+      return;
+    }
     try {
       await deleteWebsiteRow("cms_website_services", service.id);
       toast.success("Service deleted");
@@ -90,11 +121,11 @@ function Page() {
   return (
     <>
       <PageHeader
-        title="Services & Categories"
-        description="Manage the live service categories used by the website and quote workflow."
+        title="Services"
+        description="Organize your offerings into parent services and sub-services, such as Digital Products → Web Development."
         actions={
           <Button size="sm" onClick={() => edit()}>
-            <Plus className="size-4" /> New service
+            <Plus className="size-4" /> New parent service
           </Button>
         }
       />
@@ -103,10 +134,10 @@ function Page() {
         !error &&
         (services.length ? (
           <div className="overflow-x-auto rounded-lg border bg-card">
-            <table className="w-full min-w-[640px] text-sm">
+            <table className="w-full min-w-[760px] text-sm">
               <thead>
                 <tr className="border-b text-left text-xs text-muted-foreground">
-                  {["Service", "Category", "Description", "Status", "Actions"].map((heading) => (
+                  {["Service hierarchy", "Description", "Status", "Actions"].map((heading) => (
                     <th key={heading} className="px-4 py-3 font-medium">
                       {heading}
                     </th>
@@ -114,32 +145,84 @@ function Page() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {services.map((service) => (
-                  <tr key={service.id}>
-                    <td className="px-4 py-3 font-medium">{service.name}</td>
-                    <td className="px-4 py-3">{service.category}</td>
-                    <td className="max-w-sm truncate px-4 py-3 text-muted-foreground">
-                      {service.description}
-                    </td>
-                    <td className="px-4 py-3">{service.status}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => edit(service)}>
-                          <Pencil className="size-4" /> Edit
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => void remove(service)}>
-                          <Trash2 className="size-4" /> Delete
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {rows.map((service) => {
+                  const parent = roots.find((root) => root.id === service.parent_id);
+                  const subServices = childrenByParent.get(service.id) ?? [];
+                  const isExpanded = expanded.includes(service.id);
+                  return (
+                    <tr key={service.id} className={parent ? "bg-muted/20" : ""}>
+                      <td className="px-4 py-3">
+                        <div className={`flex items-center gap-2 ${parent ? "pl-8" : ""}`}>
+                          {!parent && subServices.length > 0 ? (
+                            <button
+                              type="button"
+                              aria-label={`${isExpanded ? "Collapse" : "Expand"} ${service.name}`}
+                              aria-expanded={isExpanded}
+                              className="rounded p-1 hover:bg-muted"
+                              onClick={() =>
+                                setExpanded((current) =>
+                                  isExpanded
+                                    ? current.filter((id) => id !== service.id)
+                                    : [...current, service.id],
+                                )
+                              }
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="size-4" />
+                              ) : (
+                                <ChevronRight className="size-4" />
+                              )}
+                            </button>
+                          ) : (
+                            <span className="w-6" />
+                          )}
+                          <div>
+                            <p className={`font-medium ${parent ? "text-muted-foreground" : ""}`}>
+                              {service.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {parent ? `Sub-service of ${parent.name}` : "Parent service"}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="max-w-sm truncate px-4 py-3 text-muted-foreground">
+                        {service.description || "—"}
+                      </td>
+                      <td className="px-4 py-3">{service.status}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => edit(service)}>
+                            <Pencil className="size-4" /> Edit
+                          </Button>
+                          {!parent && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setExpanded((current) =>
+                                  current.includes(service.id) ? current : [...current, service.id],
+                                );
+                                edit(undefined, service.id);
+                              }}
+                            >
+                              <Plus className="size-4" /> Add sub-service
+                            </Button>
+                          )}
+                          <Button size="sm" variant="outline" onClick={() => void remove(service)}>
+                            <Trash2 className="size-4" /> Delete
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         ) : (
           <p className="rounded-lg border bg-card p-8 text-center text-sm text-muted-foreground">
-            No services yet. Create one to get started.
+            No services yet. Create a parent service, then add sub-services beneath it.
           </p>
         ))}
       {open && (
@@ -173,13 +256,25 @@ function Page() {
                 />
               </div>
               <div className="grid gap-1.5">
-                <Label htmlFor="service-category">Category *</Label>
-                <Input
-                  id="service-category"
-                  value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  required
-                />
+                <Label htmlFor="service-parent">Parent service</Label>
+                <select
+                  id="service-parent"
+                  className="h-10 rounded-md border bg-background px-3 text-sm"
+                  value={form.parent_id}
+                  onChange={(event) => setForm({ ...form, parent_id: event.target.value })}
+                >
+                  <option value="">None — this is a parent service</option>
+                  {roots
+                    .filter((parent) => parent.id !== editing?.id)
+                    .map((parent) => (
+                      <option key={parent.id} value={parent.id}>
+                        {parent.name}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Leave empty for a top-level service, or choose one to create a sub-service.
+                </p>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="service-description">Description</Label>

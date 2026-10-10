@@ -8,8 +8,8 @@ grant usage, select on sequence public.cms_proposal_reference_seq to authenticat
 
 create table if not exists public.cms_website_services (
   id uuid primary key default gen_random_uuid(),
+  parent_id uuid references public.cms_website_services(id) on delete cascade,
   name text not null,
-  category text not null,
   description text not null default '',
   status text not null default 'Draft' check (status in ('Draft', 'Published')),
   sort_order integer not null default 0,
@@ -21,6 +21,10 @@ create table if not exists public.cms_portfolio_projects (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   slug text not null unique,
+  project_url text check (
+    project_url is null
+    or project_url ~* '^https?://[^[:space:]]+$'
+  ),
   service text not null,
   year integer not null check (year between 1900 and 2200),
   summary text not null default '',
@@ -72,6 +76,10 @@ create table if not exists public.cms_quote_pricing (
   item text not null,
   unit text not null,
   base_price bigint not null check (base_price >= 0),
+  estimated_weeks_min integer not null default 1 check (estimated_weeks_min > 0),
+  estimated_weeks_max integer not null default 2 check (
+    estimated_weeks_max >= estimated_weeks_min
+  ),
   active boolean not null default true,
   sort_order integer not null default 0,
   created_at timestamptz not null default now(),
@@ -167,10 +175,34 @@ begin
 end;
 $$;
 
+create or replace function public.is_published_cms_service_parent(parent_service_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.cms_website_services as parent
+    where parent.id = parent_service_id
+      and parent.status = 'Published'
+      and parent.parent_id is null
+  );
+$$;
+revoke all on function public.is_published_cms_service_parent(uuid) from public;
+grant execute on function public.is_published_cms_service_parent(uuid) to anon, authenticated;
+
 drop policy if exists "Public can read published services" on public.cms_website_services;
 create policy "Public can read published services"
   on public.cms_website_services for select to anon
-  using (status = 'Published');
+  using (
+    status = 'Published'
+    and (
+      parent_id is null
+      or public.is_published_cms_service_parent(parent_id)
+    )
+  );
 drop policy if exists "Public can read published portfolio" on public.cms_portfolio_projects;
 create policy "Public can read published portfolio"
   on public.cms_portfolio_projects for select to anon

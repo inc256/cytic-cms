@@ -61,9 +61,12 @@ export function StatGrid({ children }: { children: ReactNode }) {
 
 const STATUS: Record<string, "success" | "warning" | "info" | "danger" | "brand" | "neutral"> = {
   Published: "success", Active: "success", Cleared: "success", cleared: "success", Accepted: "success", Won: "success",
+  Paid: "success",
   Draft: "neutral", Invited: "warning", partial: "warning", "In review": "warning", Scheduled: "info", Sent: "info",
   New: "brand", Contacted: "info", Qualified: "warning", "Proposal sent": "info",
-  Lost: "danger", Declined: "danger", refunded: "danger", Inactive: "neutral",
+  Lost: "danger", Declined: "danger", refunded: "danger",
+  Overdue: "danger",
+  Inactive: "neutral",
 };
 export function StatusBadge({ status }: { status: string }) {
   return <Badge variant={STATUS[status] ?? "neutral"} className="capitalize">{status}</Badge>;

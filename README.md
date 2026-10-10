@@ -1,3 +1,9 @@
+## Landing website integration
+
+For public-site Supabase credentials, migration order, services and portfolio
+queries, blog setup and publishing, quote submissions, and CYTIC styling, see
+[`LANDING-WEBSITE-README.md`](./LANDING-WEBSITE-README.md).
+
 ## Supabase authentication
 
 Copy `.env.example` to `.env.local` and set `VITE_SUPABASE_URL` and
@@ -36,6 +42,17 @@ receive receipt numbers automatically. New quote requests are read from the
 existing `quote_requests` table. Old demo figures are not imported as actual
 financial records.
 
+### Invoices
+
+Run [`supabase/invoices.sql`](./supabase/invoices.sql) after
+[`supabase/rbac.sql`](./supabase/rbac.sql). The Invoices screen is available to
+CEO and FINANCE. Create a draft with line items, issue it to the client, then
+mark it paid after payment is received. The paid transition atomically creates
+one linked income transaction and its receipt; a uniqueness constraint
+prevents duplicate invoice payments. Download invoice PDFs from Invoices and
+payment receipt PDFs from Receipts & Transactions. This workflow supports full
+payment only; partial payments are not supported.
+
 Supabase Auth persists the user's browser session and refreshes its token
 automatically. Signing out or clearing browser storage ends that session.
 
@@ -70,6 +87,32 @@ Portfolio entries require at least one uploaded image; blog cover images are
 optional. No demo content is imported. The public website must read the
 published rows and public Storage URLs from these Supabase resources to display
 the content managed here.
+
+After `supabase/service-hierarchy.sql`, run
+[`supabase/self-quote-seed.sql`](./supabase/self-quote-seed.sql) to set starting
+prices and estimated delivery ranges for matching sub-services that already
+exist. It does not create services, questions, availability settings, or other
+quote content; unmatched sub-services are skipped. It is safe to rerun. In
+Self-Quote & Pricing, assign a starting price and delivery range by selecting
+an existing parent service and one of its sub-services; arbitrary text labels
+are no longer accepted for new pricing rules.
+
+For an existing Website CMS database, run
+[`supabase/portfolio-project-url.sql`](./supabase/portfolio-project-url.sql)
+after `supabase/website-cms.sql` to add the optional live-project URL field.
+The URL may be left blank; if supplied, it must use `http://` or `https://`.
+The portfolio section is named simply “Portfolio”.
+
+For an existing Website CMS database, run
+[`supabase/service-hierarchy.sql`](./supabase/service-hierarchy.sql) after
+`supabase/website-cms.sql`. It migrates the old service category values into
+parent services, preserves the existing services as their sub-services, and
+drops the old service `category` column. For a new setup, the website migration
+already creates the hierarchical service relationship; run the hierarchy
+migration afterward to install its hierarchy validation and public visibility
+rules. The Services screen now supports top-level services and one level of
+sub-services (for example, Digital Products → Web Development and Android App
+Development); deleting a parent removes its sub-services.
 
 ### Designer Workspace
 

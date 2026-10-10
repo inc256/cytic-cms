@@ -28,6 +28,7 @@ export const NAV: NavGroup[] = [
         items: [
           { title: "Business Performance", to: "/analytics/performance" },
           { title: "Income & Expenditure", to: "/analytics/finance" },
+          { title: "Invoices", to: "/analytics/invoices" },
           { title: "Receipts & Transactions", to: "/analytics/receipts" },
           { title: "Service Analytics", to: "/analytics/services" },
           { title: "Business Trends", to: "/analytics/trends" },
@@ -44,8 +45,8 @@ export const NAV: NavGroup[] = [
       {
         label: "Content",
         items: [
-          { title: "Services & Categories", to: "/website/services" },
-          { title: "Portfolio & Case Studies", to: "/website/portfolio" },
+          { title: "Services", to: "/website/services" },
+          { title: "Portfolio", to: "/website/portfolio" },
           { title: "Blog & Articles", to: "/website/blog" },
         ],
       },

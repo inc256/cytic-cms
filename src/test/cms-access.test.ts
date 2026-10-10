@@ -55,6 +55,9 @@ describe("CMS role access", () => {
     expect(canAccessPath("INVESTOR", "/website/inquiries")).toBe(false);
     expect(canAccessPath("PARTNER", "/website/inquiries")).toBe(false);
     expect(canAccessPath("FINANCE", "/analytics/receipts")).toBe(true);
+    expect(canAccessPath("FINANCE", "/analytics/invoices")).toBe(true);
+    expect(canAccessPath("SECRETARY", "/analytics/invoices")).toBe(false);
+    expect(canAccessPath("INVESTOR", "/analytics/invoices")).toBe(false);
     expect(canAccessPath("FINANCE", "/website/inquiries")).toBe(false);
     expect(defaultPathForRole("SECRETARY")).toBe("/");
   });

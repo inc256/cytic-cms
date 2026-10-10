@@ -14,6 +14,7 @@ import { Route as TeamRouteImport } from './routes/team'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as AnalyticsFinanceRouteImport } from './routes/analytics.finance'
 import { Route as AnalyticsGoalsRouteImport } from './routes/analytics.goals'
+import { Route as AnalyticsInvoicesRouteImport } from './routes/analytics.invoices'
 import { Route as AnalyticsPerformanceRouteImport } from './routes/analytics.performance'
 import { Route as AnalyticsReceiptsRouteImport } from './routes/analytics.receipts'
 import { Route as AnalyticsServicesRouteImport } from './routes/analytics.services'
@@ -58,6 +59,11 @@ const AnalyticsFinanceRoute = AnalyticsFinanceRouteImport.update({
 const AnalyticsGoalsRoute = AnalyticsGoalsRouteImport.update({
   id: '/analytics/goals',
   path: '/analytics/goals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsInvoicesRoute = AnalyticsInvoicesRouteImport.update({
+  id: '/analytics/invoices',
+  path: '/analytics/invoices',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnalyticsPerformanceRoute = AnalyticsPerformanceRouteImport.update({
@@ -175,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/users': typeof UsersRoute
   '/analytics/finance': typeof AnalyticsFinanceRoute
   '/analytics/goals': typeof AnalyticsGoalsRoute
+  '/analytics/invoices': typeof AnalyticsInvoicesRoute
   '/analytics/performance': typeof AnalyticsPerformanceRoute
   '/analytics/receipts': typeof AnalyticsReceiptsRoute
   '/analytics/services': typeof AnalyticsServicesRoute
@@ -202,6 +209,7 @@ export interface FileRoutesByTo {
   '/users': typeof UsersRoute
   '/analytics/finance': typeof AnalyticsFinanceRoute
   '/analytics/goals': typeof AnalyticsGoalsRoute
+  '/analytics/invoices': typeof AnalyticsInvoicesRoute
   '/analytics/performance': typeof AnalyticsPerformanceRoute
   '/analytics/receipts': typeof AnalyticsReceiptsRoute
   '/analytics/services': typeof AnalyticsServicesRoute
@@ -230,6 +238,7 @@ export interface FileRoutesById {
   '/users': typeof UsersRoute
   '/analytics/finance': typeof AnalyticsFinanceRoute
   '/analytics/goals': typeof AnalyticsGoalsRoute
+  '/analytics/invoices': typeof AnalyticsInvoicesRoute
   '/analytics/performance': typeof AnalyticsPerformanceRoute
   '/analytics/receipts': typeof AnalyticsReceiptsRoute
   '/analytics/services': typeof AnalyticsServicesRoute
@@ -259,6 +268,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/analytics/finance'
     | '/analytics/goals'
+    | '/analytics/invoices'
     | '/analytics/performance'
     | '/analytics/receipts'
     | '/analytics/services'
@@ -286,6 +296,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/analytics/finance'
     | '/analytics/goals'
+    | '/analytics/invoices'
     | '/analytics/performance'
     | '/analytics/receipts'
     | '/analytics/services'
@@ -313,6 +324,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/analytics/finance'
     | '/analytics/goals'
+    | '/analytics/invoices'
     | '/analytics/performance'
     | '/analytics/receipts'
     | '/analytics/services'
@@ -341,6 +353,7 @@ export interface RootRouteChildren {
   UsersRoute: typeof UsersRoute
   AnalyticsFinanceRoute: typeof AnalyticsFinanceRoute
   AnalyticsGoalsRoute: typeof AnalyticsGoalsRoute
+  AnalyticsInvoicesRoute: typeof AnalyticsInvoicesRoute
   AnalyticsPerformanceRoute: typeof AnalyticsPerformanceRoute
   AnalyticsReceiptsRoute: typeof AnalyticsReceiptsRoute
   AnalyticsServicesRoute: typeof AnalyticsServicesRoute
@@ -398,6 +411,13 @@ declare module '@tanstack/react-router' {
       path: '/analytics/goals'
       fullPath: '/analytics/goals'
       preLoaderRoute: typeof AnalyticsGoalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics/invoices': {
+      id: '/analytics/invoices'
+      path: '/analytics/invoices'
+      fullPath: '/analytics/invoices'
+      preLoaderRoute: typeof AnalyticsInvoicesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/analytics/performance': {
@@ -549,6 +569,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsersRoute: UsersRoute,
   AnalyticsFinanceRoute: AnalyticsFinanceRoute,
   AnalyticsGoalsRoute: AnalyticsGoalsRoute,
+  AnalyticsInvoicesRoute: AnalyticsInvoicesRoute,
   AnalyticsPerformanceRoute: AnalyticsPerformanceRoute,
   AnalyticsReceiptsRoute: AnalyticsReceiptsRoute,
   AnalyticsServicesRoute: AnalyticsServicesRoute,

@@ -19,6 +19,7 @@ export function canAccessPath(role: CmsRole | null, path: string): boolean {
   if (!role) return false;
 
   const normalizedPath = path.length > 1 ? path.replace(/\/+$/, "") : path;
+  if (normalizedPath === "/analytics/invoices") return role === "FINANCE";
   const analytics = normalizedPath.startsWith("/analytics/");
   const website = [
     "/website/services",

@@ -28,6 +28,8 @@ type PriceRule = {
   item: string;
   unit: string;
   base_price: number;
+  estimated_weeks_min: number;
+  estimated_weeks_max: number;
   active: boolean;
 };
 type ScopeQuestion = {
@@ -39,14 +41,12 @@ type ScopeQuestion = {
 };
 type QuoteSettings = { service_availability: Record<string, boolean>; disclaimer: string };
 const STEPS = [
-  "What do you need?",
-  "Select specific services",
-  "Define project scope",
-  "Business & project info",
-  "Expected timeline",
+  "Choose service groups",
+  "Select sub-services and details",
+  "Business information",
+  "Project scope and requirements",
   "Contact details",
-  "Review initial estimate",
-  "Request a detailed proposal",
+  "Review estimate and request a detailed proposal",
 ];
 const DEFAULT_DISCLAIMER =
   "This Self-Quote is an initial estimate only. It is not a final quotation, invoice, contract or binding commercial offer. A detailed proposal will follow a review of your requirements.";
@@ -55,12 +55,17 @@ function Page() {
   const services = useWebsiteRows<WebsiteService>("cms_website_services", "sort_order");
   const pricing = useWebsiteRows<PriceRule>("cms_quote_pricing", "sort_order");
   const questions = useWebsiteRows<ScopeQuestion>("cms_quote_questions", "sort_order");
+  const [pricingParentId, setPricingParentId] = useState("");
   const [settings, setSettings] = useState<QuoteSettings>({
     service_availability: {},
     disclaimer: DEFAULT_DISCLAIMER,
   });
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
+  const parentServices = services.rows.filter((service) => !service.parent_id);
+  const availablePricingChildren = services.rows.filter(
+    (service) => service.parent_id === pricingParentId,
+  );
 
   const refreshSettings = async () => {
     const supabase = getSupabaseClient();
@@ -107,15 +112,28 @@ function Page() {
     event.preventDefault();
     const pricingForm = event.currentTarget;
     const form = new FormData(event.currentTarget);
+    const selectedParent = parentServices.find(
+      (service) => service.id === String(form.get("service_id")),
+    );
+    const selectedChild = availablePricingChildren.find(
+      (service) => service.id === String(form.get("item_id")),
+    );
+    if (!selectedParent || !selectedChild) {
+      toast.error("Choose an existing parent service and one of its sub-services.");
+      return;
+    }
     try {
       await saveWebsiteRow("cms_quote_pricing", {
-        service: String(form.get("service")).trim(),
-        item: String(form.get("item")).trim(),
+        service: selectedParent.name,
+        item: selectedChild.name,
         unit: String(form.get("unit")).trim(),
         base_price: Number(form.get("base_price")),
+        estimated_weeks_min: Number(form.get("estimated_weeks_min")),
+        estimated_weeks_max: Number(form.get("estimated_weeks_max")),
       });
       toast.success("Pricing rule added");
       pricingForm.reset();
+      setPricingParentId("");
       await pricing.refresh();
     } catch (error) {
       toast.error(
@@ -208,25 +226,55 @@ function Page() {
             >
               {services.rows.length ? (
                 <ul className="space-y-4">
-                  {services.rows.map((service) => (
-                    <li key={service.id} className="flex items-center justify-between gap-4">
-                      <div>
-                        <Label htmlFor={`available-${service.id}`}>{service.name}</Label>
-                        <p className="text-xs text-muted-foreground">{service.category}</p>
+                  {parentServices.map((parent) => (
+                    <li key={parent.id} className="border-b pb-3">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <Label htmlFor={`available-${parent.id}`}>{parent.name}</Label>
+                          <p className="text-xs text-muted-foreground">Parent service</p>
+                        </div>
+                        <Switch
+                          id={`available-${parent.id}`}
+                          checked={settings.service_availability[parent.id] ?? true}
+                          onCheckedChange={(checked) =>
+                            setSettings({
+                              ...settings,
+                              service_availability: {
+                                ...settings.service_availability,
+                                [parent.id]: checked,
+                              },
+                            })
+                          }
+                        />
                       </div>
-                      <Switch
-                        id={`available-${service.id}`}
-                        checked={settings.service_availability[service.id] ?? true}
-                        onCheckedChange={(checked) =>
-                          setSettings({
-                            ...settings,
-                            service_availability: {
-                              ...settings.service_availability,
-                              [service.id]: checked,
-                            },
-                          })
-                        }
-                      />
+                      <ul className="ml-4 mt-2 space-y-2 border-l pl-4">
+                        {services.rows
+                          .filter((service) => service.parent_id === parent.id)
+                          .map((service) => (
+                            <li
+                              key={service.id}
+                              className="flex items-center justify-between gap-4"
+                            >
+                              <Label htmlFor={`available-${service.id}`} className="font-normal">
+                                {service.name}
+                              </Label>
+                              <Switch
+                                id={`available-${service.id}`}
+                                checked={settings.service_availability[service.id] ?? true}
+                                disabled={settings.service_availability[parent.id] === false}
+                                onCheckedChange={(checked) =>
+                                  setSettings({
+                                    ...settings,
+                                    service_availability: {
+                                      ...settings.service_availability,
+                                      [service.id]: checked,
+                                    },
+                                  })
+                                }
+                              />
+                            </li>
+                          ))}
+                      </ul>
                     </li>
                   ))}
                 </ul>
@@ -238,18 +286,27 @@ function Page() {
             </Panel>
           </div>
 
-          <Panel title="Pricing rules" description="Amounts are stored in UGX whole shillings.">
+          <Panel
+            title="Pricing rules"
+            description="Assign a starting price to a sub-service in UGX whole shillings."
+          >
             <div className="overflow-x-auto">
               <table className="w-full min-w-[600px] text-sm">
                 <thead>
                   <tr className="border-b text-left text-xs text-muted-foreground">
-                    {["Service", "Item", "Unit", "Starting price", "Active", ""].map(
-                      (heading, i) => (
-                        <th key={`${heading}-${i}`} className="px-3 py-2">
-                          {heading}
-                        </th>
-                      ),
-                    )}
+                    {[
+                      "Service",
+                      "Sub-service",
+                      "Unit",
+                      "Starting price",
+                      "Delivery estimate",
+                      "Active",
+                      "",
+                    ].map((heading, i) => (
+                      <th key={`${heading}-${i}`} className="px-3 py-2">
+                        {heading}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -259,6 +316,9 @@ function Page() {
                       <td className="px-3 py-2">{rule.item}</td>
                       <td className="px-3 py-2">{rule.unit}</td>
                       <td className="px-3 py-2">{formatMoney(Number(rule.base_price))}</td>
+                      <td className="px-3 py-2">
+                        {rule.estimated_weeks_min}–{rule.estimated_weeks_max} weeks
+                      </td>
                       <td className="px-3 py-2">
                         <Switch
                           aria-label={`${rule.active ? "Disable" : "Enable"} ${rule.item}`}
@@ -290,15 +350,49 @@ function Page() {
             </div>
             <form
               onSubmit={(event) => void addPricing(event)}
-              className="mt-4 grid gap-3 border-t pt-4 sm:grid-cols-2 lg:grid-cols-4"
+              className="mt-4 grid gap-3 border-t pt-4 sm:grid-cols-2 lg:grid-cols-3"
             >
               <div className="grid gap-1.5">
-                <Label htmlFor="price-service">Service</Label>
-                <Input id="price-service" name="service" required />
+                <Label htmlFor="price-service">Parent service</Label>
+                <select
+                  id="price-service"
+                  name="service_id"
+                  value={pricingParentId}
+                  onChange={(event) => setPricingParentId(event.target.value)}
+                  className="h-10 rounded-md border bg-background px-3 text-sm"
+                  required
+                >
+                  <option value="">Choose a service</option>
+                  {parentServices.map((service) => (
+                    <option key={service.id} value={service.id}>
+                      {service.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="grid gap-1.5">
-                <Label htmlFor="price-item">Item</Label>
-                <Input id="price-item" name="item" required />
+                <Label htmlFor="price-item">Sub-service</Label>
+                <select
+                  id="price-item"
+                  name="item_id"
+                  key={pricingParentId}
+                  className="h-10 rounded-md border bg-background px-3 text-sm"
+                  required
+                  disabled={!pricingParentId}
+                  defaultValue=""
+                >
+                  <option value="">Choose a sub-service</option>
+                  {availablePricingChildren.map((service) => (
+                    <option key={service.id} value={service.id}>
+                      {service.name}
+                    </option>
+                  ))}
+                </select>
+                {pricingParentId && availablePricingChildren.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Add sub-services under this service before setting prices.
+                  </p>
+                )}
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="price-unit">Unit</Label>
@@ -308,7 +402,31 @@ function Page() {
                 <Label htmlFor="price-base">Starting price (UGX)</Label>
                 <Input id="price-base" name="base_price" type="number" min="0" step="1" required />
               </div>
-              <Button type="submit" size="sm" className="sm:col-span-2 lg:col-span-4">
+              <div className="grid gap-1.5">
+                <Label htmlFor="price-weeks-min">Minimum delivery (weeks)</Label>
+                <Input
+                  id="price-weeks-min"
+                  name="estimated_weeks_min"
+                  type="number"
+                  min="1"
+                  step="1"
+                  defaultValue="1"
+                  required
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="price-weeks-max">Maximum delivery (weeks)</Label>
+                <Input
+                  id="price-weeks-max"
+                  name="estimated_weeks_max"
+                  type="number"
+                  min="1"
+                  step="1"
+                  defaultValue="2"
+                  required
+                />
+              </div>
+              <Button type="submit" size="sm" className="sm:col-span-2 lg:col-span-3">
                 <Plus className="size-4" /> Add pricing rule
               </Button>
             </form>
@@ -355,7 +473,27 @@ function Page() {
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="question-applies">Applies to</Label>
-                <Input id="question-applies" name="applies_to" required />
+                <select
+                  id="question-applies"
+                  name="applies_to"
+                  className="h-10 rounded-md border bg-background px-3 text-sm"
+                  defaultValue="All selected services"
+                  required
+                >
+                  <option value="All selected services">All selected services</option>
+                  {parentServices.map((parent) => (
+                    <optgroup key={parent.id} label={parent.name}>
+                      <option value={parent.name}>{parent.name} (all sub-services)</option>
+                      {services.rows
+                        .filter((service) => service.parent_id === parent.id)
+                        .map((service) => (
+                          <option key={service.id} value={service.name}>
+                            {service.name}
+                          </option>
+                        ))}
+                    </optgroup>
+                  ))}
+                </select>
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="question-type">Input type</Label>

@@ -89,7 +89,16 @@ export async function saveWorkspaceRow(
   const result = id
     ? await supabase.from(table).update(values).eq("id", id).select().single()
     : await supabase.from(table).insert(values).select().single();
-  if (result.error) throw new Error(result.error.message);
+  if (result.error) {
+    const diagnostic = [
+      result.error.code ? `(${result.error.code})` : "",
+      result.error.details,
+      result.error.hint ? `Hint: ${result.error.hint}` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    throw new Error(diagnostic ? `${result.error.message} ${diagnostic}` : result.error.message);
+  }
   return result.data;
 }
 

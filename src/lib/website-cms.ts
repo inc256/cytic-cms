@@ -5,8 +5,8 @@ export const BLOG_IMAGE_BUCKET = "blog-images";
 
 export type WebsiteService = {
   id: string;
+  parent_id: string | null;
   name: string;
-  category: string;
   description: string;
   status: "Draft" | "Published";
   sort_order: number;
@@ -17,6 +17,7 @@ export type PortfolioProject = {
   id: string;
   title: string;
   slug: string;
+  project_url: string | null;
   service: string;
   year: number;
   summary: string;
