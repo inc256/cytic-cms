@@ -7,8 +7,9 @@ queries, blog setup and publishing, quote submissions, and CYTIC styling, see
 ## Supabase authentication
 
 Copy `.env.example` to `.env.local` and set `VITE_SUPABASE_URL` and
-`VITE_SUPABASE_ANON_KEY` for your project. The anon key is intended for browser
-use; never put a service-role key in the frontend.
+`VITE_SUPABASE_PUBLISHABLE_KEY` for your project. Add these same variables to
+Vercel and redeploy so the production build receives them. The publishable key
+is intended for browser use; never put a service-role key in the frontend.
 
 Run [`supabase/rbac.sql`](./supabase/rbac.sql) in the Supabase SQL Editor. In
 Supabase Authentication settings, turn off email confirmation for the Email

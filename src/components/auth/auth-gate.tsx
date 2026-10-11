@@ -112,7 +112,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (state.status === "configuration-error") {
     return (
       <AuthMessage title="Supabase is not configured">
-        Add <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> to the local
+        Add <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> to the
         environment, then restart the development server.
       </AuthMessage>
     );

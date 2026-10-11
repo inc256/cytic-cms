@@ -30,7 +30,7 @@ For a Vite landing site, create a local `.env.local` file in that site's root:
 
 ```dotenv
 VITE_SUPABASE_URL=https://skdjvphgczemfksypzwo.supabase.co
-VITE_SUPABASE_ANON_KEY=paste-the-project-anon-or-publishable-key-here
+VITE_SUPABASE_PUBLISHABLE_KEY=paste-the-project-publishable-key-here
 ```
 
 Keep `.env.local` out of Git. The CMS repository already ignores `*.local`;
@@ -51,13 +51,13 @@ Create one reusable client, for example `src/lib/supabase.ts`:
 import { createClient } from "@supabase/supabase-js";
 
 const url = import.meta.env.VITE_SUPABASE_URL;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-if (!url || !anonKey) {
-  throw new Error("Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.");
+if (!url || !publishableKey) {
+  throw new Error("Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.");
 }
 
-export const supabase = createClient(url, anonKey);
+export const supabase = createClient(url, publishableKey);
 ```
 
 If using a framework other than Vite, use that framework's public environment
