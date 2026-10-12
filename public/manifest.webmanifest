@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "WPA — CYTIC Creatives CMS",
+  "short_name": "WPA",
+  "description": "CYTIC Creatives business and website management workspace.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#faf9f6",
+  "theme_color": "#00075d",
+  "icons": [
+    {
+      "src": "/Logo_192p.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/Logo_512p.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

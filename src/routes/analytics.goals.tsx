@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { FileDown, Plus } from "lucide-react";
+import { FileDown, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AnalyticsState } from "@/components/cms/analytics-state";
@@ -54,6 +54,7 @@ function Page() {
   const { state } = useAuth();
   const [open, setOpen] = useState(false);
   const [metric, setMetric] = useState<BusinessGoal["metric"]>("revenue");
+  const [editingGoal, setEditingGoal] = useState<BusinessGoal | null>(null);
   const canManage = state.status === "signed-in" && state.role === "CEO";
 
   if (loading || error || !data) {
@@ -68,7 +69,7 @@ function Page() {
     );
   }
 
-  const createGoal = async (event: FormEvent<HTMLFormElement>) => {
+  const saveGoal = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const target = Number(form.get("target"));
@@ -81,19 +82,45 @@ function Page() {
       toast.error("Supabase is not configured.");
       return;
     }
-    const result = await supabase.from("cms_business_goals").insert({
+    const goal = {
       name: String(form.get("name")).trim(),
       metric,
       target,
       period_start: String(form.get("period_start")),
       period_end: String(form.get("period_end")),
-    });
+    };
+    const result = editingGoal
+      ? await supabase.from("cms_business_goals").update(goal).eq("id", editingGoal.id)
+      : await supabase.from("cms_business_goals").insert(goal);
     if (result.error) {
-      toast.error(`Could not create goal: ${result.error.message}`);
+      toast.error(`Could not ${editingGoal ? "update" : "create"} goal: ${result.error.message}`);
       return;
     }
-    toast.success("Goal saved");
+    toast.success(editingGoal ? "Goal updated" : "Goal saved");
     setOpen(false);
+    setEditingGoal(null);
+    await refresh();
+  };
+
+  const openGoal = (goal?: BusinessGoal) => {
+    setEditingGoal(goal ?? null);
+    setMetric(goal?.metric ?? "revenue");
+    setOpen(true);
+  };
+
+  const deleteGoal = async (goal: BusinessGoal) => {
+    if (!window.confirm(`Delete goal "${goal.name}"?`)) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      toast.error("Supabase is not configured.");
+      return;
+    }
+    const result = await supabase.from("cms_business_goals").delete().eq("id", goal.id);
+    if (result.error) {
+      toast.error(`Could not delete goal: ${result.error.message}`);
+      return;
+    }
+    toast.success("Goal deleted");
     await refresh();
   };
 
@@ -158,18 +185,23 @@ function Page() {
           canManage ? (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button size="sm">
+                <Button size="sm" onClick={() => openGoal()}>
                   <Plus className="size-4" /> New goal
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>New goal</DialogTitle>
+                  <DialogTitle>{editingGoal ? "Edit goal" : "New goal"}</DialogTitle>
                 </DialogHeader>
-                <form id="new-goal" onSubmit={createGoal} className="grid gap-4">
+                <form
+                  key={editingGoal?.id ?? "new"}
+                  id="new-goal"
+                  onSubmit={saveGoal}
+                  className="grid gap-4"
+                >
                   <div className="grid gap-1.5">
                     <Label htmlFor="goal-name">Goal name</Label>
-                    <Input id="goal-name" name="name" required />
+                    <Input id="goal-name" name="name" defaultValue={editingGoal?.name} required />
                   </div>
                   <div className="grid gap-1.5">
                     <Label>Measure</Label>
@@ -191,22 +223,42 @@ function Page() {
                   </div>
                   <div className="grid gap-1.5">
                     <Label htmlFor="goal-target">Target</Label>
-                    <Input id="goal-target" name="target" type="number" min="1" step="1" required />
+                    <Input
+                      id="goal-target"
+                      name="target"
+                      type="number"
+                      min="1"
+                      step="1"
+                      defaultValue={editingGoal?.target}
+                      required
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="grid gap-1.5">
                       <Label htmlFor="goal-start">Period start</Label>
-                      <Input id="goal-start" name="period_start" type="date" required />
+                      <Input
+                        id="goal-start"
+                        name="period_start"
+                        type="date"
+                        defaultValue={editingGoal?.period_start}
+                        required
+                      />
                     </div>
                     <div className="grid gap-1.5">
                       <Label htmlFor="goal-end">Period end</Label>
-                      <Input id="goal-end" name="period_end" type="date" required />
+                      <Input
+                        id="goal-end"
+                        name="period_end"
+                        type="date"
+                        defaultValue={editingGoal?.period_end}
+                        required
+                      />
                     </div>
                   </div>
                 </form>
                 <DialogFooter>
                   <Button type="submit" form="new-goal">
-                    Save goal
+                    {editingGoal ? "Save changes" : "Save goal"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -223,13 +275,35 @@ function Page() {
             return (
               <Panel key={goal.id}>
                 <div className="flex items-start justify-between gap-4">
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium">{goal.name}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {goal.period_start} – {goal.period_end}
                     </p>
                   </div>
-                  <span className="text-xs tabular-nums text-muted-foreground">{pct}%</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs tabular-nums text-muted-foreground">{pct}%</span>
+                    {canManage && (
+                      <>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label={`Edit goal ${goal.name}`}
+                          onClick={() => openGoal(goal)}
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          aria-label={`Delete goal ${goal.name}`}
+                          onClick={() => void deleteGoal(goal)}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
                 <Progress value={pct} className="mt-4 h-2" />
                 <dl className="mt-4 grid grid-cols-3 text-xs">

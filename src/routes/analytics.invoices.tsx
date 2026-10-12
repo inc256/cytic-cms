@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Download, Plus, Send, CircleDollarSign, Trash2 } from "lucide-react";
+import { Download, Pencil, Plus, Send, CircleDollarSign, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { jsPDF } from "jspdf";
 import { toast } from "sonner";
@@ -152,6 +152,7 @@ function Page() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [paying, setPaying] = useState<Invoice | null>(null);
   const [saving, setSaving] = useState(false);
   const [lines, setLines] = useState<InvoiceLine[]>([{ description: "", amount: 0 }]);
@@ -188,9 +189,10 @@ function Page() {
   const resetCreate = () => {
     setLines([{ description: "", amount: 0 }]);
     setProjectId("");
+    setEditingInvoice(null);
   };
 
-  const create = async (event: FormEvent<HTMLFormElement>) => {
+  const saveInvoice = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const items = lines.filter((line) => line.description.trim());
@@ -212,7 +214,7 @@ function Page() {
       return;
     }
     setSaving(true);
-    const result = await supabase.from("cms_invoices").insert({
+    const invoiceData = {
       client: String(form.get("client")).trim(),
       client_email: String(form.get("client_email") ?? "").trim() || null,
       project_id: projectId || null,
@@ -221,15 +223,49 @@ function Page() {
       line_items: items,
       total,
       notes: String(form.get("notes") ?? "").trim(),
-    });
+    };
+    const result = editingInvoice
+      ? await supabase.from("cms_invoices").update(invoiceData).eq("id", editingInvoice.id)
+      : await supabase.from("cms_invoices").insert(invoiceData);
     setSaving(false);
     if (result.error) {
-      toast.error(`Could not create invoice: ${result.error.message}`);
+      toast.error(
+        `Could not ${editingInvoice ? "update" : "create"} invoice: ${result.error.message}`,
+      );
       return;
     }
-    toast.success("Draft invoice created");
+    toast.success(editingInvoice ? "Invoice updated" : "Draft invoice created");
     setCreateOpen(false);
     resetCreate();
+    await refresh();
+  };
+
+  const editInvoice = (invoice: Invoice) => {
+    setEditingInvoice(invoice);
+    setLines(invoice.line_items);
+    setProjectId(invoice.project_id ?? "");
+    setCreateOpen(true);
+  };
+
+  const deleteInvoice = async (invoice: Invoice) => {
+    const detail =
+      invoice.status === "Paid"
+        ? " Its linked payment transaction and receipt will also be deleted."
+        : "";
+    if (!window.confirm(`Delete invoice ${invoice.invoice_number}?${detail}`)) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      toast.error("Supabase is not configured.");
+      return;
+    }
+    setSaving(true);
+    const result = await supabase.rpc("delete_cms_invoice", { invoice_uuid: invoice.id });
+    setSaving(false);
+    if (result.error) {
+      toast.error(`Could not delete invoice: ${result.error.message}`);
+      return;
+    }
+    toast.success("Invoice deleted");
     await refresh();
   };
 
@@ -392,6 +428,26 @@ function Page() {
                               <CircleDollarSign className="size-4" /> Mark paid
                             </Button>
                           )}
+                          {canManage && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={saving}
+                                onClick={() => editInvoice(invoice)}
+                              >
+                                <Pencil className="size-4" /> Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={saving}
+                                onClick={() => void deleteInvoice(invoice)}
+                              >
+                                <Trash2 className="size-4" /> Delete
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -410,23 +466,45 @@ function Page() {
         </div>
       )}
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      <Dialog
+        open={createOpen}
+        onOpenChange={(open) => {
+          setCreateOpen(open);
+          if (!open) resetCreate();
+        }}
+      >
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Create invoice</DialogTitle>
+            <DialogTitle>{editingInvoice ? "Edit invoice" : "Create invoice"}</DialogTitle>
             <DialogDescription>
-              Save as a draft, review the PDF, then issue it before recording payment.
+              {editingInvoice
+                ? "Update this invoice. Changes to a paid invoice also update its linked payment ledger entry."
+                : "Save as a draft, review the PDF, then issue it before recording payment."}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={(event) => void create(event)} className="grid gap-4">
+          <form
+            key={editingInvoice?.id ?? "new"}
+            onSubmit={(event) => void saveInvoice(event)}
+            className="grid gap-4"
+          >
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-1.5">
                 <Label htmlFor="invoice-client">Client *</Label>
-                <Input id="invoice-client" name="client" required />
+                <Input
+                  id="invoice-client"
+                  name="client"
+                  defaultValue={editingInvoice?.client}
+                  required
+                />
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="invoice-email">Client email</Label>
-                <Input id="invoice-email" name="client_email" type="email" />
+                <Input
+                  id="invoice-email"
+                  name="client_email"
+                  type="email"
+                  defaultValue={editingInvoice?.client_email ?? ""}
+                />
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="invoice-project">Project (optional)</Label>
@@ -450,7 +528,7 @@ function Page() {
                   id="invoice-issue-date"
                   name="issue_date"
                   type="date"
-                  defaultValue={new Date().toISOString().slice(0, 10)}
+                  defaultValue={editingInvoice?.issue_date ?? new Date().toISOString().slice(0, 10)}
                   required
                 />
               </div>
@@ -460,7 +538,10 @@ function Page() {
                   id="invoice-due-date"
                   name="due_date"
                   type="date"
-                  defaultValue={new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10)}
+                  defaultValue={
+                    editingInvoice?.due_date ??
+                    new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10)
+                  }
                   required
                 />
               </div>
@@ -530,12 +611,13 @@ function Page() {
                 id="invoice-notes"
                 name="notes"
                 rows={3}
+                defaultValue={editingInvoice?.notes}
                 className="rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             </div>
             <DialogFooter>
               <Button type="submit" disabled={saving}>
-                {saving ? "Creating…" : "Save draft invoice"}
+                {saving ? "Saving…" : editingInvoice ? "Save changes" : "Save draft invoice"}
               </Button>
             </DialogFooter>
           </form>

@@ -88,6 +88,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "CYTIC Creatives CMS" },
       { name: "description", content: "Internal workspace for CYTIC Creatives." },
       { name: "author", content: "CYTIC Creatives" },
+      { name: "theme-color", content: "#00075d" },
       { property: "og:title", content: "CYTIC Creatives CMS" },
       { property: "og:description", content: "Internal workspace for CYTIC Creatives." },
       { property: "og:type", content: "website" },
@@ -105,6 +106,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/Logo_192p.png" },
+      { rel: "icon", href: "/Logo_192p.png", type: "image/png", sizes: "192x192" },
     ],
   }),
   shellComponent: RootShell,
@@ -129,6 +133,13 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    void navigator.serviceWorker.register("/sw.js").catch((error: unknown) => {
+      console.error("Could not register WPA service worker:", error);
+    });
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState, type FormEvent } from "react";
-import { ChevronDown, ChevronRight, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, Pencil, Plus, Trash2, X } from "lucide-react";
+import type { jsPDF } from "jspdf";
 import { toast } from "sonner";
 
 import { AnalyticsState } from "@/components/cms/analytics-state";
@@ -20,6 +21,143 @@ export const Route = createFileRoute("/website/services")({
 
 const empty = { name: "", parent_id: "", description: "", status: "Draft", sort_order: "0" };
 
+async function createServiceCatalogPdf(services: WebsiteService[]): Promise<jsPDF> {
+  const { jsPDF: PdfDocument } = await import("jspdf");
+  const pdf = new PdfDocument({ format: "a4" });
+  const navy: [number, number, number] = [0, 7, 93];
+  const gold: [number, number, number] = [190, 157, 91];
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const left = 18;
+  const right = pageWidth - left;
+  const serviceWidth = 54;
+  const descriptionWidth = right - left - serviceWidth - 22;
+  const serviceX = left + 3;
+  const descriptionX = left + serviceWidth + 3;
+  const statusX = right - 3;
+
+  const childrenByParent = new Map<string, WebsiteService[]>();
+  for (const service of services) {
+    if (!service.parent_id) continue;
+    const siblings = childrenByParent.get(service.parent_id) ?? [];
+    siblings.push(service);
+    childrenByParent.set(service.parent_id, siblings);
+  }
+  for (const children of childrenByParent.values()) {
+    children.sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
+  }
+
+  const orderedServices: WebsiteService[] = [];
+  const includedIds = new Set<string>();
+  const addService = (service: WebsiteService) => {
+    if (includedIds.has(service.id)) return;
+    orderedServices.push(service);
+    includedIds.add(service.id);
+    for (const child of childrenByParent.get(service.id) ?? []) addService(child);
+  };
+  for (const root of services
+    .filter((service) => !service.parent_id)
+    .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))) {
+    addService(root);
+  }
+  for (const service of services) addService(service);
+
+  const addPageHeader = (continued: boolean) => {
+    if (continued) {
+      pdf.setFillColor(...navy);
+      pdf.rect(0, 0, pageWidth, 25, "F");
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(11);
+      pdf.text("CYTIC Creatives  |  Service Catalog", left, 16);
+      return 34;
+    }
+
+    pdf.setFillColor(...navy);
+    pdf.rect(0, 0, pageWidth, 48, "F");
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(20);
+    pdf.text("CYTIC Creatives", left, 22);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(9);
+    pdf.text("Identity that hits differently.", left, 30);
+    pdf.setTextColor(...gold);
+    pdf.setFontSize(10);
+    pdf.text("SERVICE CATALOG", right, 22, { align: "right" });
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(9);
+    pdf.text(`${services.length} service${services.length === 1 ? "" : "s"}`, right, 31, {
+      align: "right",
+    });
+    pdf.setTextColor(80, 80, 90);
+    pdf.setFontSize(9);
+    pdf.text(`Prepared ${new Date().toLocaleDateString()}`, left, 60);
+    return 72;
+  };
+
+  const addTableHeader = (y: number) => {
+    pdf.setFillColor(245, 246, 250);
+    pdf.rect(left, y - 6, right - left, 10, "F");
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(55, 55, 65);
+    pdf.setFontSize(8);
+    pdf.text("SERVICE", serviceX, y);
+    pdf.text("DESCRIPTION", descriptionX, y);
+    pdf.text("STATUS", statusX, y, { align: "right" });
+    return y + 10;
+  };
+
+  let y = addTableHeader(addPageHeader(false));
+  for (const service of orderedServices) {
+    const parent = service.parent_id
+      ? services.find((candidate) => candidate.id === service.parent_id)
+      : undefined;
+    const serviceName = parent ? `${parent.name} / ${service.name}` : service.name;
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
+    const serviceLines = pdf.splitTextToSize(serviceName, serviceWidth - 6);
+    const descriptionLines = pdf.splitTextToSize(service.description || "-", descriptionWidth - 6);
+    const lineCount = Math.max(serviceLines.length, descriptionLines.length, 1);
+    const rowHeight = Math.max(11, lineCount * 4 + 6);
+
+    if (y + rowHeight > pageHeight - 18) {
+      pdf.addPage();
+      y = addTableHeader(addPageHeader(true));
+    }
+
+    pdf.setDrawColor(225, 227, 233);
+    pdf.line(left, y + rowHeight - 2, right, y + rowHeight - 2);
+    pdf.setTextColor(30, 30, 35);
+    pdf.setFont("helvetica", parent ? "normal" : "bold");
+    pdf.text(serviceLines, serviceX, y + 2);
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(80, 80, 90);
+    pdf.text(descriptionLines, descriptionX, y + 2);
+    pdf.setTextColor(
+      service.status === "Published" ? 35 : 120,
+      service.status === "Published" ? 115 : 120,
+      service.status === "Published" ? 75 : 130,
+    );
+    pdf.text(service.status, statusX, y + 2, { align: "right" });
+    y += rowHeight;
+  }
+
+  const pageCount = pdf.getNumberOfPages();
+  for (let page = 1; page <= pageCount; page += 1) {
+    pdf.setPage(page);
+    pdf.setDrawColor(225, 227, 233);
+    pdf.line(left, pageHeight - 14, right, pageHeight - 14);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
+    pdf.setTextColor(110, 110, 120);
+    pdf.text("CYTIC Creatives | Service Catalog", left, pageHeight - 8);
+    pdf.text(`Page ${page} of ${pageCount}`, right, pageHeight - 8, { align: "right" });
+  }
+
+  return pdf;
+}
+
 function Page() {
   const {
     rows: services,
@@ -31,6 +169,7 @@ function Page() {
   const [form, setForm] = useState(empty);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [expanded, setExpanded] = useState<string[]>([]);
 
   const roots = useMemo(() => services.filter((service) => !service.parent_id), [services]);
@@ -118,15 +257,39 @@ function Page() {
     }
   };
 
+  const downloadCatalog = async () => {
+    setExporting(true);
+    try {
+      const pdf = await createServiceCatalogPdf(services);
+      pdf.save(`cytic-service-catalog-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (exportError) {
+      toast.error(
+        `Could not create service catalog PDF: ${exportError instanceof Error ? exportError.message : String(exportError)}`,
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <>
       <PageHeader
         title="Services"
         description="Organize your offerings into parent services and sub-services, such as Digital Products → Web Development."
         actions={
-          <Button size="sm" onClick={() => edit()}>
-            <Plus className="size-4" /> New parent service
-          </Button>
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => void downloadCatalog()}
+              disabled={!services.length || exporting}
+            >
+              <Download className="size-4" /> {exporting ? "Preparing PDF…" : "Download PDF"}
+            </Button>
+            <Button size="sm" onClick={() => edit()}>
+              <Plus className="size-4" /> New parent service
+            </Button>
+          </>
         }
       />
       <AnalyticsState loading={loading} error={error} onRetry={() => void refresh()} />

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { Download, Plus } from "lucide-react";
+import { Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AnalyticsState } from "@/components/cms/analytics-state";
@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useBusinessAnalytics } from "@/hooks/use-business-analytics";
-import { downloadCsv, sumTransactions } from "@/lib/business-analytics";
+import { downloadCsv, sumTransactions, type FinancialTransaction } from "@/lib/business-analytics";
 import { formatMoney } from "@/lib/format";
 import { getSupabaseClient } from "@/lib/supabase";
 import { useAuth } from "@/components/auth/auth-context";
@@ -50,6 +50,8 @@ const categories = [
 ];
 const methods = ["Bank transfer", "Mobile money", "Card", "Cash", "Other"];
 const transactionTypes = ["income", "expense", "refund"] as const;
+const defaultCategory = "Digital Products";
+const defaultMethod = "Bank transfer";
 
 function Page() {
   const { data, error, loading, refresh } = useBusinessAnalytics();
@@ -57,6 +59,7 @@ function Page() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [type, setType] = useState<(typeof transactionTypes)[number]>("income");
+  const [editingTransaction, setEditingTransaction] = useState<FinancialTransaction | null>(null);
 
   if (loading || error || !data) {
     return (
@@ -101,26 +104,68 @@ function Page() {
       toast.error("Enter a positive whole-number amount.");
       return;
     }
-    const result = await supabase.from("cms_financial_transactions").insert({
-      transaction_type: type,
+    const transaction = {
       transaction_date: String(form.get("date")),
       party: String(form.get("party")).trim(),
       project_id: projectId || null,
       service_category:
-        selectedProject?.service_category ?? (String(form.get("category") || "") || null),
+        selectedProject?.service_category ??
+        (String(form.get("category") ?? "") === "none"
+          ? null
+          : String(form.get("category") || "") || null),
       description: String(form.get("description") ?? "").trim(),
       amount,
       method: String(form.get("method")),
       payment_reference: String(form.get("payment_reference") ?? "").trim() || null,
-    });
+    };
+    const result = editingTransaction
+      ? await supabase
+          .from("cms_financial_transactions")
+          .update(transaction)
+          .eq("id", editingTransaction.id)
+      : await supabase
+          .from("cms_financial_transactions")
+          .insert({ ...transaction, transaction_type: type });
     if (result.error) {
-      toast.error(`Could not save transaction: ${result.error.message}`);
+      toast.error(
+        `Could not ${editingTransaction ? "update" : "save"} transaction: ${result.error.message}`,
+      );
       return;
     }
     toast.success(
-      type === "income" ? "Payment saved and receipt number assigned" : "Transaction saved",
+      editingTransaction
+        ? "Transaction updated"
+        : type === "income"
+          ? "Payment saved and receipt number assigned"
+          : "Transaction saved",
     );
     setOpen(false);
+    setEditingTransaction(null);
+    await refresh();
+  };
+
+  const editTransaction = (transaction: FinancialTransaction) => {
+    setEditingTransaction(transaction);
+    setType(transaction.transaction_type);
+    setOpen(true);
+  };
+
+  const deleteTransaction = async (transaction: FinancialTransaction) => {
+    if (!window.confirm(`Delete transaction ${transaction.transaction_ref}?`)) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      toast.error("Supabase is not configured.");
+      return;
+    }
+    const result = await supabase
+      .from("cms_financial_transactions")
+      .delete()
+      .eq("id", transaction.id);
+    if (result.error) {
+      toast.error(`Could not delete transaction: ${result.error.message}`);
+      return;
+    }
+    toast.success("Transaction deleted");
     await refresh();
   };
 
@@ -163,16 +208,25 @@ function Page() {
             {canRecord && (
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                  <Button size="sm">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setEditingTransaction(null);
+                      setType("income");
+                    }}
+                  >
                     <Plus className="size-4" /> Record transaction
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Record transaction</DialogTitle>
+                    <DialogTitle>
+                      {editingTransaction ? "Edit transaction" : "Record transaction"}
+                    </DialogTitle>
                   </DialogHeader>
                   <form
                     id="transaction-form"
+                    key={editingTransaction?.id ?? "new"}
                     onSubmit={saveTransaction}
                     className="grid gap-4 sm:grid-cols-2"
                   >
@@ -180,6 +234,7 @@ function Page() {
                       <Label>Type</Label>
                       <Select
                         value={type}
+                        disabled={Boolean(editingTransaction)}
                         onValueChange={(value) =>
                           setType(value as (typeof transactionTypes)[number])
                         }
@@ -198,7 +253,15 @@ function Page() {
                     </div>
                     <div className="grid gap-1.5">
                       <Label htmlFor="amount">Amount (UGX)</Label>
-                      <Input id="amount" name="amount" type="number" min="1" step="1" required />
+                      <Input
+                        id="amount"
+                        name="amount"
+                        type="number"
+                        min="1"
+                        step="1"
+                        defaultValue={editingTransaction?.amount}
+                        required
+                      />
                     </div>
                     <div className="grid gap-1.5">
                       <Label htmlFor="date">Date</Label>
@@ -206,7 +269,10 @@ function Page() {
                         id="date"
                         name="date"
                         type="date"
-                        defaultValue={new Date().toISOString().slice(0, 10)}
+                        defaultValue={
+                          editingTransaction?.transaction_date ??
+                          new Date().toISOString().slice(0, 10)
+                        }
                         required
                       />
                     </div>
@@ -214,18 +280,30 @@ function Page() {
                       <Label htmlFor="party">
                         {type === "expense" ? "Payee" : "Client / source"}
                       </Label>
-                      <Input id="party" name="party" required />
+                      <Input
+                        id="party"
+                        name="party"
+                        defaultValue={editingTransaction?.party}
+                        required
+                      />
                     </div>
                     <div className="grid gap-1.5">
                       <Label>Project (optional)</Label>
-                      <Select name="project_id" defaultValue="none">
+                      <Select
+                        name="project_id"
+                        defaultValue={editingTransaction?.project_id ?? "none"}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="No project" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">No project</SelectItem>
                           {data.projects
-                            .filter((project) => project.status !== "Cancelled")
+                            .filter(
+                              (project) =>
+                                project.status !== "Cancelled" ||
+                                project.id === editingTransaction?.project_id,
+                            )
                             .map((project) => (
                               <SelectItem key={project.id} value={project.id}>
                                 {project.name}
@@ -236,22 +314,42 @@ function Page() {
                     </div>
                     <div className="grid gap-1.5">
                       <Label>Category</Label>
-                      <Select name="category" defaultValue={categories[0]}>
+                      <Select
+                        name="category"
+                        defaultValue={
+                          editingTransaction
+                            ? (editingTransaction.service_category ?? "none")
+                            : defaultCategory
+                        }
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
+                          <SelectItem value="none">No category</SelectItem>
                           {categories.map((item) => (
                             <SelectItem key={item} value={item}>
                               {item}
                             </SelectItem>
                           ))}
+                          {editingTransaction?.service_category &&
+                            !categories.includes(editingTransaction.service_category) && (
+                              <SelectItem
+                                value={editingTransaction.service_category}
+                                key={editingTransaction.service_category}
+                              >
+                                {editingTransaction.service_category}
+                              </SelectItem>
+                            )}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="grid gap-1.5">
                       <Label>Payment method</Label>
-                      <Select name="method" defaultValue={methods[0]}>
+                      <Select
+                        name="method"
+                        defaultValue={editingTransaction?.method ?? defaultMethod}
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -266,16 +364,24 @@ function Page() {
                     </div>
                     <div className="grid gap-1.5">
                       <Label htmlFor="payment-reference">Payment reference (optional)</Label>
-                      <Input id="payment-reference" name="payment_reference" />
+                      <Input
+                        id="payment-reference"
+                        name="payment_reference"
+                        defaultValue={editingTransaction?.payment_reference ?? ""}
+                      />
                     </div>
                     <div className="grid gap-1.5 sm:col-span-2">
                       <Label htmlFor="description">Description</Label>
-                      <Input id="description" name="description" />
+                      <Input
+                        id="description"
+                        name="description"
+                        defaultValue={editingTransaction?.description}
+                      />
                     </div>
                   </form>
                   <DialogFooter>
                     <Button type="submit" form="transaction-form">
-                      Save transaction
+                      {editingTransaction ? "Save changes" : "Save transaction"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -316,6 +422,7 @@ function Page() {
                   "Category",
                   "Method",
                   "Amount",
+                  ...(canRecord ? ["Actions"] : []),
                 ].map((heading) => (
                   <th key={heading} className="px-4 py-3 font-medium">
                     {heading}
@@ -336,6 +443,25 @@ function Page() {
                   <td className="px-4 py-3">{item.service_category ?? "—"}</td>
                   <td className="px-4 py-3">{item.method}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{formatMoney(item.amount)}</td>
+                  <td className="px-4 py-3">
+                    {canRecord &&
+                      (item.invoice_id ? (
+                        <span className="text-xs text-muted-foreground">Manage on invoice</span>
+                      ) : (
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="outline" onClick={() => editTransaction(item)}>
+                            <Pencil className="size-4" /> Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => void deleteTransaction(item)}
+                          >
+                            <Trash2 className="size-4" /> Delete
+                          </Button>
+                        </div>
+                      ))}
+                  </td>
                 </tr>
               ))}
             </tbody>

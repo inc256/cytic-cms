@@ -25,6 +25,7 @@ export type FinancialTransaction = {
   method: string;
   payment_reference: string | null;
   receipt_number: string | null;
+  invoice_id?: string | null;
   created_at: string;
 };
 
@@ -96,9 +97,7 @@ export function getPreviousPeriodRange(period: string, now = new Date()): Period
 }
 
 export function inRange(value: string, range: PeriodRange): boolean {
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(value)
-    ? new Date(`${value}T00:00:00`)
-    : new Date(value);
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00:00`) : new Date(value);
   return date >= range.start && date <= range.end;
 }
 
