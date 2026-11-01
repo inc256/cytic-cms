@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 
 import { AnalyticsState } from "@/components/cms/analytics-state";
-import { QuotationAnalysis } from "@/components/cms/quotation-analysis";
 import {
   ConversionChart,
   IncomeExpenseChart,
@@ -166,9 +165,6 @@ function Overview() {
         <Stat label="Proposal-stage requests" value={String(pendingProposals)} />
         <Stat label="Request approval rate" value={`${conversion}%`} hint="All quote requests" />
       </StatGrid>
-      <div className="mt-6">
-        <QuotationAnalysis />
-      </div>
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <Panel
           title="Income vs expenditure"
