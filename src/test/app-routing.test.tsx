@@ -14,4 +14,20 @@ describe("App routing", () => {
 
     expect(matches.at(-1)?.routeId).not.toBe(rootRouteId);
   });
+
+  it("matches the dedicated Projects page", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+
+    const matches = router.matchRoutes("/analytics/projects");
+
+    expect(matches.at(-1)?.routeId).toBe("/analytics/projects");
+  });
+
+  it("matches the independent General Settings page", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+
+    const matches = router.matchRoutes("/settings");
+
+    expect(matches.at(-1)?.routeId).toBe("/settings");
+  });
 });

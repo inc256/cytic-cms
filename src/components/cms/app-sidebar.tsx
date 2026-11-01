@@ -1,4 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { ChevronRight, ChevronsUpDown, LogOut } from "lucide-react";
 import {
   Sidebar,
@@ -34,22 +35,30 @@ export function AppSidebar() {
   const normalizedPath = path.length > 1 ? path.replace(/\/+$/, "") : path;
   const { setOpenMobile } = useSidebar();
   const { state, signOut } = useAuth();
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const role = state.status === "signed-in" ? state.role : null;
   const close = () => setOpenMobile(false);
+  const visibleNav = useMemo(() => {
+    if (!role) return [];
+    return NAV.flatMap((group) => {
+      if (group.to) return canAccessPath(role, group.to) ? [group] : [];
+
+      const sections = (group.sections ?? [])
+        .map((section) => ({
+          ...section,
+          items: section.items.filter(
+            (item) =>
+              canAccessPath(role, item.to) && (!item.visibleTo || item.visibleTo.includes(role)),
+          ),
+        }))
+        .filter((section) => section.items.length > 0);
+
+      return sections.length > 0 ? [{ ...group, sections }] : [];
+    });
+  }, [role]);
   if (state.status !== "signed-in") return null;
 
-  const { user, role } = state;
-  const visibleNav = NAV.flatMap((group) => {
-    if (group.to) return canAccessPath(role, group.to) ? [group] : [];
-
-    const sections = (group.sections ?? [])
-      .map((section) => ({
-        ...section,
-        items: section.items.filter((item) => canAccessPath(role, item.to)),
-      }))
-      .filter((section) => section.items.length > 0);
-
-    return sections.length > 0 ? [{ ...group, sections }] : [];
-  });
+  const { user } = state;
   const displayName =
     typeof user.user_metadata.full_name === "string"
       ? user.user_metadata.full_name
@@ -65,9 +74,11 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2.5 px-1 py-1.5">
-          <div className="grid size-8 shrink-0 place-items-center rounded-md bg-primary font-display text-sm font-semibold text-primary-foreground">
-            C
-          </div>
+          <img
+            src="/Logo_512p.png"
+            alt="CYTIC Creatives"
+            className="size-8 shrink-0 object-contain"
+          />
           <div className="min-w-0 leading-tight group-data-[collapsible=icon]:hidden">
             <div className="font-display text-sm font-semibold tracking-tight text-foreground">
               CYTIC <span className="font-normal text-muted-foreground">Creatives</span>
@@ -105,7 +116,10 @@ export function AppSidebar() {
               return (
                 <Collapsible
                   key={g.title}
-                  defaultOpen={active || g.title === "Website"}
+                  open={expandedGroups[g.title] ?? false}
+                  onOpenChange={(open) =>
+                    setExpandedGroups((current) => ({ ...current, [g.title]: open }))
+                  }
                   className="group/collapsible"
                   asChild
                 >

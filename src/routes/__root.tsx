@@ -92,7 +92,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "CYTIC Creatives CMS" },
       { property: "og:description", content: "Internal workspace for CYTIC Creatives." },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "/Logo_512p.png" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "/Logo_512p.png" },
     ],
     links: [
       {
@@ -106,9 +108,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/Logo_512p.png", type: "image/png", sizes: "512x512" },
       { rel: "manifest", href: "/manifest.webmanifest" },
-      { rel: "apple-touch-icon", href: "/Logo_192p.png" },
-      { rel: "icon", href: "/Logo_192p.png", type: "image/png", sizes: "192x192" },
+      { rel: "apple-touch-icon", href: "/Logo_512p.png" },
     ],
   }),
   shellComponent: RootShell,
@@ -151,7 +153,7 @@ function RootComponent() {
               <AppSidebar />
               <SidebarInset className="min-w-0 bg-background">
                 <Topbar />
-                <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-6 md:px-8 md:py-8">
+                <main className="mx-auto w-full min-w-0 max-w-[1400px] flex-1 px-3 py-4 sm:px-4 sm:py-6 md:px-8 md:py-8">
                   <Outlet />
                 </main>
               </SidebarInset>

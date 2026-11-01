@@ -10,12 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as AnalyticsFinanceRouteImport } from './routes/analytics.finance'
 import { Route as AnalyticsGoalsRouteImport } from './routes/analytics.goals'
 import { Route as AnalyticsInvoicesRouteImport } from './routes/analytics.invoices'
 import { Route as AnalyticsPerformanceRouteImport } from './routes/analytics.performance'
+import { Route as AnalyticsProjectsRouteImport } from './routes/analytics.projects'
 import { Route as AnalyticsReceiptsRouteImport } from './routes/analytics.receipts'
 import { Route as AnalyticsServicesRouteImport } from './routes/analytics.services'
 import { Route as AnalyticsTrendsRouteImport } from './routes/analytics.trends'
@@ -39,6 +41,11 @@ import { Route as WebsiteSettingsRouteImport } from './routes/website.settings'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TeamRoute = TeamRouteImport.update({
@@ -69,6 +76,11 @@ const AnalyticsInvoicesRoute = AnalyticsInvoicesRouteImport.update({
 const AnalyticsPerformanceRoute = AnalyticsPerformanceRouteImport.update({
   id: '/analytics/performance',
   path: '/analytics/performance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsProjectsRoute = AnalyticsProjectsRouteImport.update({
+  id: '/analytics/projects',
+  path: '/analytics/projects',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnalyticsReceiptsRoute = AnalyticsReceiptsRouteImport.update({
@@ -177,12 +189,14 @@ const WebsiteSettingsRoute = WebsiteSettingsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/users': typeof UsersRoute
   '/analytics/finance': typeof AnalyticsFinanceRoute
   '/analytics/goals': typeof AnalyticsGoalsRoute
   '/analytics/invoices': typeof AnalyticsInvoicesRoute
   '/analytics/performance': typeof AnalyticsPerformanceRoute
+  '/analytics/projects': typeof AnalyticsProjectsRoute
   '/analytics/receipts': typeof AnalyticsReceiptsRoute
   '/analytics/services': typeof AnalyticsServicesRoute
   '/analytics/trends': typeof AnalyticsTrendsRoute
@@ -205,12 +219,14 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/users': typeof UsersRoute
   '/analytics/finance': typeof AnalyticsFinanceRoute
   '/analytics/goals': typeof AnalyticsGoalsRoute
   '/analytics/invoices': typeof AnalyticsInvoicesRoute
   '/analytics/performance': typeof AnalyticsPerformanceRoute
+  '/analytics/projects': typeof AnalyticsProjectsRoute
   '/analytics/receipts': typeof AnalyticsReceiptsRoute
   '/analytics/services': typeof AnalyticsServicesRoute
   '/analytics/trends': typeof AnalyticsTrendsRoute
@@ -234,12 +250,14 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/settings': typeof SettingsRoute
   '/team': typeof TeamRoute
   '/users': typeof UsersRoute
   '/analytics/finance': typeof AnalyticsFinanceRoute
   '/analytics/goals': typeof AnalyticsGoalsRoute
   '/analytics/invoices': typeof AnalyticsInvoicesRoute
   '/analytics/performance': typeof AnalyticsPerformanceRoute
+  '/analytics/projects': typeof AnalyticsProjectsRoute
   '/analytics/receipts': typeof AnalyticsReceiptsRoute
   '/analytics/services': typeof AnalyticsServicesRoute
   '/analytics/trends': typeof AnalyticsTrendsRoute
@@ -264,12 +282,14 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/settings'
     | '/team'
     | '/users'
     | '/analytics/finance'
     | '/analytics/goals'
     | '/analytics/invoices'
     | '/analytics/performance'
+    | '/analytics/projects'
     | '/analytics/receipts'
     | '/analytics/services'
     | '/analytics/trends'
@@ -292,12 +312,14 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/settings'
     | '/team'
     | '/users'
     | '/analytics/finance'
     | '/analytics/goals'
     | '/analytics/invoices'
     | '/analytics/performance'
+    | '/analytics/projects'
     | '/analytics/receipts'
     | '/analytics/services'
     | '/analytics/trends'
@@ -320,12 +342,14 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/settings'
     | '/team'
     | '/users'
     | '/analytics/finance'
     | '/analytics/goals'
     | '/analytics/invoices'
     | '/analytics/performance'
+    | '/analytics/projects'
     | '/analytics/receipts'
     | '/analytics/services'
     | '/analytics/trends'
@@ -349,12 +373,14 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SettingsRoute: typeof SettingsRoute
   TeamRoute: typeof TeamRoute
   UsersRoute: typeof UsersRoute
   AnalyticsFinanceRoute: typeof AnalyticsFinanceRoute
   AnalyticsGoalsRoute: typeof AnalyticsGoalsRoute
   AnalyticsInvoicesRoute: typeof AnalyticsInvoicesRoute
   AnalyticsPerformanceRoute: typeof AnalyticsPerformanceRoute
+  AnalyticsProjectsRoute: typeof AnalyticsProjectsRoute
   AnalyticsReceiptsRoute: typeof AnalyticsReceiptsRoute
   AnalyticsServicesRoute: typeof AnalyticsServicesRoute
   AnalyticsTrendsRoute: typeof AnalyticsTrendsRoute
@@ -383,6 +409,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/team': {
@@ -425,6 +458,13 @@ declare module '@tanstack/react-router' {
       path: '/analytics/performance'
       fullPath: '/analytics/performance'
       preLoaderRoute: typeof AnalyticsPerformanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics/projects': {
+      id: '/analytics/projects'
+      path: '/analytics/projects'
+      fullPath: '/analytics/projects'
+      preLoaderRoute: typeof AnalyticsProjectsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/analytics/receipts': {
@@ -565,12 +605,14 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SettingsRoute: SettingsRoute,
   TeamRoute: TeamRoute,
   UsersRoute: UsersRoute,
   AnalyticsFinanceRoute: AnalyticsFinanceRoute,
   AnalyticsGoalsRoute: AnalyticsGoalsRoute,
   AnalyticsInvoicesRoute: AnalyticsInvoicesRoute,
   AnalyticsPerformanceRoute: AnalyticsPerformanceRoute,
+  AnalyticsProjectsRoute: AnalyticsProjectsRoute,
   AnalyticsReceiptsRoute: AnalyticsReceiptsRoute,
   AnalyticsServicesRoute: AnalyticsServicesRoute,
   AnalyticsTrendsRoute: AnalyticsTrendsRoute,

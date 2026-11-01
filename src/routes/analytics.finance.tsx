@@ -60,7 +60,6 @@ function Page() {
   const [query, setQuery] = useState("");
   const [type, setType] = useState<(typeof transactionTypes)[number]>("income");
   const [editingTransaction, setEditingTransaction] = useState<FinancialTransaction | null>(null);
-
   if (loading || error || !data) {
     return (
       <>
@@ -136,7 +135,7 @@ function Page() {
       editingTransaction
         ? "Transaction updated"
         : type === "income"
-          ? "Payment saved and receipt number assigned"
+          ? "Income transaction saved"
           : "Transaction saved",
     );
     setOpen(false);
@@ -277,9 +276,7 @@ function Page() {
                       />
                     </div>
                     <div className="grid gap-1.5">
-                      <Label htmlFor="party">
-                        {type === "expense" ? "Payee" : "Client / source"}
-                      </Label>
+                      <Label htmlFor="party">Client / source</Label>
                       <Input
                         id="party"
                         name="party"
@@ -405,8 +402,8 @@ function Page() {
         />
       </StatGrid>
       <p className="mt-3 text-xs text-muted-foreground">
-        Income creates a numbered receipt. Record refunds as separate transactions; financial
-        history is retained.
+        Record income and expenses here. Issue client receipts separately from Receipts; recording
+        income does not create a receipt. Financial history is retained.
       </p>
       <div className="mt-6 overflow-x-auto rounded-lg border bg-card shadow-soft">
         {rows.length ? (
@@ -417,7 +414,7 @@ function Page() {
                   "Reference",
                   "Date",
                   "Type",
-                  "Client / payee",
+                  "Party",
                   "Project",
                   "Category",
                   "Method",

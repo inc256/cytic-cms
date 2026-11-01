@@ -30,6 +30,14 @@ you set when creating the Auth user.
 
 Overview is available to CEO, FINANCE, INVESTOR, PARTNER, and SECRETARY.
 Business Analytics is available to CEO, FINANCE, and SECRETARY.
+Projects are managed from the Projects page in Business Analytics. Project
+create, edit, status, and delete actions are available to CEO; FINANCE and
+SECRETARY can review project financials.
+Receipts & Transactions is in Business Analytics. Landing Page Quotes is
+available there to CEO, FINANCE, PARTNER, and SECRETARY; CONTENT EDITOR handles
+the same quote inbox from Website → Inquiries & Leads. General Settings is a
+separate CEO-only section for shared company details and private invoice bank
+details. Website Settings remains dedicated to landing-page behavior.
 
 ### Live business analytics
 
@@ -38,21 +46,52 @@ Supabase SQL Editor to install the analytics tables and policies. It is safe to
 rerun and creates `cms_projects`, `cms_financial_transactions`, and
 `cms_business_goals`. Analytics also reads quote service/status summaries
 through the `get_cms_analytics_quote_requests()` function. Log a payment or
-expense in Income & Expenditure to create real financial analytics; payments
-receive receipt numbers automatically. New quote requests are read from the
-existing `quote_requests` table. Old demo figures are not imported as actual
-financial records.
+expense in Income & Expenditure to create real financial analytics. New quote
+requests are read from the existing `quote_requests` table. Old demo figures
+are not imported as actual financial records.
 
 ### Invoices
 
 Run [`supabase/invoices.sql`](./supabase/invoices.sql) after
 [`supabase/rbac.sql`](./supabase/rbac.sql). The Invoices screen is available to
 CEO and FINANCE. Create a draft with line items, issue it to the client, then
-mark it paid after payment is received. The paid transition atomically creates
-one linked income transaction and its receipt; a uniqueness constraint
-prevents duplicate invoice payments. Download invoice PDFs from Invoices and
-payment receipt PDFs from Receipts & Transactions. This workflow supports full
-payment only; partial payments are not supported.
+mark its status paid after payment is received. This does not issue a receipt
+or create an income transaction; handle both independently. This workflow
+supports full payment only; partial payments are not supported.
+
+Quotations are available under Business Analytics. They can be
+created and previewed without creating or linking a project. Invoice and
+quotation creation both provide a document preview before saving. Client
+address, telephone, and email are optional. A PNG signature can be uploaded in
+General Settings and optionally included on each quotation or invoice; without
+it, each document provides a handwritten signature line. Quotation references
+use the `QTN-` prefix. Document previews and generated PDFs use A4 portrait
+format; quotations, invoices, and receipts can be printed or saved as PDF.
+Overview and Business Performance include quotation pipeline and acceptance
+analysis, separate from recorded income.
+Quotation and invoice forms support optional Notes and Terms & Conditions;
+receipts support optional Notes. Document styling follows the A4 navy-header,
+ruled-table, and highlighted-notes design.
+
+Receipts are issued independently from income. They include the client name,
+paid-for project or description, amount in numbers and words, remaining
+balance, and CYTIC contact details. Issuing a receipt does not create an
+income entry; enter that separately in Income & Expenditure.
+
+For an existing database, run
+[`supabase/document-details-settings.sql`](./supabase/document-details-settings.sql)
+after [`supabase/rbac.sql`](./supabase/rbac.sql),
+[`supabase/website-cms.sql`](./supabase/website-cms.sql), and
+[`supabase/invoices.sql`](./supabase/invoices.sql). This idempotent upgrade
+moves bank details out of publicly readable website settings, adds optional
+client/document fields, notes and terms, and signature references, creates the independent receipt table
+and private `cytic_digital_signatures` storage bucket, migrates legacy
+income-linked receipts, and updates invoice payment behavior. It also records
+before/after changes to settings, projects, financial transactions,
+quotations, invoices, receipts, and quote requests in a CEO-readable audit
+table. In General Settings, set shared company details, private invoice bank
+details, and the optional PNG signature. Matching social usernames are grouped
+into one line on quotations and invoices.
 
 Supabase Auth persists the user's browser session and refreshes its token
 automatically. Signing out or clearing browser storage ends that session.
@@ -73,9 +112,9 @@ Authentication → Users; then assign their CMS role from Users & Permissions
 and create a profile in Team. The migration prevents a CEO from demoting their
 own account or removing the last CEO role.
 
-Recording an income payment in Income & Expenditure creates a receipt number.
-Receipts & Transactions lets CEO and FINANCE record a payment, preview its
-receipt, download a printable/shareable PDF, or open the PDF for printing.
+Receipts lets CEO and FINANCE issue a receipt independently, preview it,
+download a printable/shareable PDF, or open it for printing. Add the income
+separately in Income & Expenditure.
 
 ### Website CMS data
 

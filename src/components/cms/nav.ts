@@ -5,10 +5,12 @@ import {
   Users,
   BookOpen,
   ContactRound,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
+import type { CmsRole } from "@/lib/cms-access";
 
-export type NavItem = { title: string; to: string };
+export type NavItem = { title: string; to: string; visibleTo?: CmsRole[] };
 export type NavGroup = {
   title: string;
   icon: LucideIcon;
@@ -27,8 +29,15 @@ export const NAV: NavGroup[] = [
       {
         items: [
           { title: "Business Performance", to: "/analytics/performance" },
+          { title: "Projects", to: "/analytics/projects" },
           { title: "Income & Expenditure", to: "/analytics/finance" },
           { title: "Invoices", to: "/analytics/invoices" },
+          { title: "Quotations", to: "/website/proposals" },
+          {
+            title: "Landing Page Quotes",
+            to: "/website/inquiries",
+            visibleTo: ["CEO", "FINANCE", "PARTNER", "SECRETARY"],
+          },
           { title: "Receipts & Transactions", to: "/analytics/receipts" },
           { title: "Service Analytics", to: "/analytics/services" },
           { title: "Business Trends", to: "/analytics/trends" },
@@ -54,8 +63,11 @@ export const NAV: NavGroup[] = [
         label: "Client acquisition",
         items: [
           { title: "Self-Quote & Pricing", to: "/website/quote" },
-          { title: "Inquiries & Leads", to: "/website/inquiries" },
-          { title: "Proposals", to: "/website/proposals" },
+          {
+            title: "Inquiries & Leads",
+            to: "/website/inquiries",
+            visibleTo: ["CONTENT EDITOR"],
+          },
         ],
       },
       { label: "Configuration", items: [{ title: "Website Settings", to: "/website/settings" }] },
@@ -83,6 +95,7 @@ export const NAV: NavGroup[] = [
   },
   { title: "Users & Permissions", num: "04", icon: Users, to: "/users" },
   { title: "Team", num: "05", icon: ContactRound, to: "/team" },
+  { title: "General Settings", icon: Settings, to: "/settings" },
 ];
 
 export function findCrumbs(path: string): string[] {

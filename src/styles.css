@@ -189,15 +189,126 @@
 }
 
 @layer base {
+  html,
+  body,
+  #root {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
   body {
     font-family: var(--font-sans);
     font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
   }
   h1,
   h2,
   h3 {
     font-family: var(--font-display);
     letter-spacing: -0.015em;
+  }
+}
+
+@media (max-width: 639px) {
+  [role="dialog"] {
+    width: calc(100vw - 1rem) !important;
+    max-width: calc(100vw - 1rem) !important;
+    max-height: calc(100dvh - 1rem) !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    padding: 1rem !important;
+  }
+
+  [role="dialog"].document-dialog {
+    padding: 0 !important;
+  }
+
+  .overflow-x-auto {
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+
+  .document-a4 {
+    width: 100%;
+    min-height: max(148.5mm, 141.4vw);
+    max-width: 100%;
+  }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  html,
+  body {
+    width: 210mm;
+    margin: 0 !important;
+    background: white !important;
+  }
+
+  [data-radix-portal] {
+    position: static !important;
+  }
+
+  [data-radix-dialog-overlay] {
+    display: none !important;
+  }
+
+  [data-radix-portal] > [data-state="open"]:not([role="dialog"]) {
+    display: none !important;
+  }
+
+  [role="dialog"] {
+    position: static !important;
+    inset: auto !important;
+    display: block !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    transform: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .document-a4,
+  .document-a4 * {
+    visibility: visible !important;
+  }
+
+  .document-a4 {
+    position: relative !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
+    max-width: none !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .document-a4 > header,
+  .document-a4 section,
+  .document-a4 footer,
+  .document-a4 .document-item-row,
+  .document-a4 .document-document-section {
+    break-inside: avoid;
+  }
+
+  .document-print-controls {
+    display: none !important;
   }
 }

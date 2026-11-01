@@ -1,354 +1,689 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { Download, Printer } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Eye, Plus, Printer, Trash2 } from "lucide-react";
 import type { jsPDF } from "jspdf";
 import { toast } from "sonner";
 
+import { useAuth } from "@/components/auth/auth-context";
 import { AnalyticsState } from "@/components/cms/analytics-state";
 import { PageHeader } from "@/components/cms/primitives";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useBusinessAnalytics } from "@/hooks/use-business-analytics";
-import { downloadCsv, type FinancialTransaction } from "@/lib/business-analytics";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useDocumentSettings } from "@/hooks/use-document-settings";
+import {
+  createReceiptRecord,
+  deleteReceiptRecord,
+  getReceiptRecords,
+  type ReceiptProject,
+  type ReceiptRecord,
+} from "@/lib/document-records";
+import { amountInWords } from "@/lib/amount-in-words";
 import { formatMoney } from "@/lib/format";
-import { useAuth } from "@/components/auth/auth-context";
+import { addDocumentWatermark } from "@/lib/document-logo";
+import { getDocumentCompanyDetails, type DocumentSettings } from "@/lib/website-cms";
 import { meta } from "@/lib/seo";
 
 export const Route = createFileRoute("/analytics/receipts")({
-  head: () =>
-    meta("Receipts & Transactions", "Review and print receipts for payments recorded in Supabase."),
+  head: () => meta("Receipts", "Issue and manage independent payment receipts."),
   component: Page,
 });
 
+type ReceiptDraft = Omit<ReceiptRecord, "id" | "receipt_number" | "created_at">;
+
+function safeAmountInWords(amount: number): string {
+  return Number.isSafeInteger(amount) && amount >= 0
+    ? amountInWords(amount)
+    : "Enter a valid whole-number amount to preview in words.";
+}
+
 function ReceiptDocument({
-  transaction,
-  projectName,
+  receipt,
+  paidFor,
+  settings,
 }: {
-  transaction: FinancialTransaction;
-  projectName: string;
+  receipt: ReceiptRecord | ReceiptDraft;
+  paidFor: string;
+  settings: DocumentSettings;
 }) {
+  const companyDetails = getDocumentCompanyDetails(settings);
   return (
-    <div className="bg-card text-foreground">
-      <div className="flex items-start justify-between bg-primary px-8 py-6 text-primary-foreground">
+    <article className="document-a4 relative isolate mx-auto flex min-h-[297mm] w-full max-w-[210mm] flex-col overflow-hidden bg-white text-[#1e2b3c]">
+      <img
+        src="/Logo_512p.png"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-[58%] z-0 size-[112mm] -translate-x-1/2 -translate-y-1/2 object-contain opacity-[0.045]"
+      />
+      <header className="relative z-10 flex min-h-[48mm] items-center justify-between gap-6 bg-[#0a2342] px-[9.5%] py-[12mm] text-white">
         <div>
-          <p className="font-display text-xl font-semibold tracking-tight">CYTIC Creatives</p>
-          <p className="mt-0.5 text-xs opacity-75">Identity that hits differently.</p>
-        </div>
-        <div className="text-right">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-gold">Payment receipt</p>
-          <p className="mt-1 font-mono text-sm">{transaction.receipt_number}</p>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-6 px-8 py-6 text-sm">
-        <div>
-          <p className="text-xs text-muted-foreground">Received from</p>
-          <p className="mt-1 font-medium">{transaction.party}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-muted-foreground">Date received</p>
-          <p className="mt-1 font-medium">{transaction.transaction_date}</p>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">Project</p>
-          <p className="mt-1">{projectName || "—"}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-muted-foreground">Payment method</p>
-          <p className="mt-1">{transaction.method}</p>
-        </div>
-      </div>
-      <div className="mx-8 border-y py-4 text-sm">
-        <div className="flex justify-between py-1">
-          <span className="text-muted-foreground">Payment reference</span>
-          <span>{transaction.payment_reference || transaction.transaction_ref}</span>
-        </div>
-      </div>
-      <div className="flex items-end justify-between px-8 py-6">
-        <div className="text-xs text-muted-foreground">
-          <p>Issued by CYTIC Creatives</p>
-          <p>{transaction.description}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-muted-foreground">Amount paid</p>
-          <p className="font-display text-2xl font-semibold tabular-nums text-primary">
-            {formatMoney(transaction.amount)}
+          <p className="font-display text-3xl font-semibold uppercase tracking-wide">
+            Payment receipt
+          </p>
+          <p className="mt-2 text-sm text-[#b0c4de]">{receipt.receipt_date || "—"}</p>
+          <p className="mt-1 font-mono text-xs text-[#b0c4de]">
+            {"receipt_number" in receipt ? receipt.receipt_number : "DRAFT PREVIEW"}
           </p>
         </div>
+        <div className="text-right">
+          <p className="font-display text-xl font-bold leading-tight tracking-wide">
+            CYTIC <span className="font-medium">Creatives.</span>
+          </p>
+          <p className="mt-1 text-[10px] tracking-wide text-[#b0c4de]">
+            Identity that hits differently
+          </p>
+        </div>
+      </header>
+      <div className="relative z-10 grid gap-5 px-[9.5%] py-6 text-sm sm:grid-cols-2">
+        <div>
+          <p className="text-xs text-muted-foreground">Received from</p>
+          <p className="mt-1 font-medium">{receipt.client_name || "Client name"}</p>
+        </div>
+        <div className="sm:text-right">
+          <p className="text-xs text-muted-foreground">Date received</p>
+          <p className="mt-1 font-medium">{receipt.receipt_date || "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground">Paid for</p>
+          <p className="mt-1 font-medium">{paidFor || "—"}</p>
+        </div>
+        <div className="sm:text-right">
+          <p className="text-xs text-muted-foreground">Payment method</p>
+          <p className="mt-1">{receipt.payment_method || "—"}</p>
+        </div>
       </div>
-      <div className="h-1 bg-gold" />
-      <p className="px-8 py-3 text-[10px] text-muted-foreground">
-        CYTIC Creatives · A Namielus Group Limited company · Kampala, Uganda. This receipt confirms
-        payment received and is not an invoice.
-      </p>
-    </div>
+      <section className="relative z-10 mx-[9.5%] border-y border-[#0a2342] py-4 text-sm">
+        <div className="flex justify-between gap-4 py-1">
+          <span className="text-muted-foreground">Payment reference</span>
+          <span className="break-all text-right">{receipt.payment_reference || "—"}</span>
+        </div>
+        <div className="flex justify-between gap-4 py-1">
+          <span className="font-semibold text-[#4f6076]">Amount paid</span>
+          <span className="text-right font-bold tabular-nums text-[#0a2342]">
+            {formatMoney(Number(receipt.amount_paid))}
+          </span>
+        </div>
+        <p className="py-1 text-xs text-[#4f6076]">
+          {safeAmountInWords(Number(receipt.amount_paid))}
+        </p>
+        <div className="flex justify-between gap-4 border-t pt-3">
+          <span className="text-[#4f6076]">Balance remaining</span>
+          <span className="font-semibold tabular-nums text-[#0a2342]">
+            {formatMoney(Number(receipt.balance))}
+          </span>
+        </div>
+      </section>
+      {receipt.notes && (
+        <section className="relative z-10 mx-[9.5%] mt-5 rounded-r border-l-[3px] border-[#0a2342] bg-[#f7f9fc] px-4 py-3">
+          <h2 className="mb-1 text-xs font-bold uppercase tracking-wide text-[#0a2342]">Notes</h2>
+          <p className="whitespace-pre-wrap text-xs leading-relaxed text-[#4f6076]">
+            {receipt.notes}
+          </p>
+        </section>
+      )}
+      {companyDetails.length > 0 && (
+        <section className="relative z-10 mx-[9.5%] mt-5 border-t border-[#d0d8e3] pt-4 text-xs">
+          <h2 className="mb-2 font-bold uppercase tracking-wide text-[#0a2342]">CYTIC Details</h2>
+          <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
+            {companyDetails.map((detail) => (
+              <div key={detail.label} className="flex gap-2">
+                <dt className="shrink-0 text-[#4f6076]">{detail.label}:</dt>
+                <dd className="min-w-0 break-words">{detail.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
+      <footer className="relative z-10 mt-auto px-[9.5%]">
+        <div className="mt-5 h-1 bg-[#c4a15a]" />
+        <p className="py-3 text-[10px] text-[#4f6076]">
+          CYTIC Creatives. · Kampala, Uganda. This receipt confirms payment received and is not an
+          invoice.
+        </p>
+      </footer>
+    </article>
   );
 }
 
 async function createReceiptPdf(
-  transaction: FinancialTransaction,
-  projectName: string,
+  receipt: ReceiptRecord | ReceiptDraft,
+  paidFor: string,
+  settings: DocumentSettings,
 ): Promise<jsPDF> {
   const { jsPDF: PdfDocument } = await import("jspdf");
-  const pdf = new PdfDocument();
-  const navy: [number, number, number] = [0, 7, 93];
+  const pdf = new PdfDocument({ orientation: "portrait", unit: "mm", format: "a4" });
+  const navy: [number, number, number] = [10, 35, 66];
   const gold: [number, number, number] = [190, 157, 91];
   const left = 20;
   const right = 190;
-
   pdf.setFillColor(...navy);
   pdf.rect(0, 0, 210, 48, "F");
+  await addDocumentWatermark(pdf);
   pdf.setTextColor(255, 255, 255);
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(20);
-  pdf.text("CYTIC Creatives", left, 23);
+  pdf.text("PAYMENT RECEIPT", left, 24);
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(9);
-  pdf.text("Identity that hits differently.", left, 31);
-  pdf.setTextColor(...gold);
-  pdf.setFontSize(10);
-  pdf.text("PAYMENT RECEIPT", right, 20, { align: "right" });
+  pdf.setTextColor(176, 196, 222);
+  pdf.text(receipt.receipt_date || "—", left, 34);
+  pdf.text("receipt_number" in receipt ? receipt.receipt_number : "DRAFT PREVIEW", left, 41);
   pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(11);
-  pdf.text(transaction.receipt_number ?? transaction.transaction_ref, right, 29, {
-    align: "right",
-  });
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(12);
+  pdf.text("CYTIC Creatives.", right, 22, { align: "right" });
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(7);
+  pdf.setTextColor(176, 196, 222);
+  pdf.text("Identity that hits differently", right, 29, { align: "right" });
 
   pdf.setTextColor(90, 90, 90);
-  pdf.setFont("helvetica", "normal");
   pdf.setFontSize(9);
-  pdf.text("RECEIVED FROM", left, 67);
-  pdf.text("DATE RECEIVED", right, 67, { align: "right" });
+  pdf.text("RECEIVED FROM", left, 65);
+  pdf.text("DATE RECEIVED", right, 65, { align: "right" });
   pdf.setTextColor(25, 25, 25);
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(12);
-  pdf.text(pdf.splitTextToSize(transaction.party, 80).slice(0, 2), left, 75);
-  pdf.text(transaction.transaction_date, right, 75, { align: "right" });
+  pdf.text(pdf.splitTextToSize(receipt.client_name || "Client name", 80).slice(0, 2), left, 73);
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(10);
+  pdf.text(receipt.receipt_date || "—", right, 73, { align: "right" });
 
   pdf.setTextColor(90, 90, 90);
-  pdf.setFont("helvetica", "normal");
   pdf.setFontSize(9);
-  pdf.text("PROJECT", left, 96);
-  pdf.text("PAYMENT METHOD", right, 96, { align: "right" });
+  pdf.text("PAID FOR", left, 94);
+  pdf.text("PAYMENT METHOD", right, 94, { align: "right" });
   pdf.setTextColor(25, 25, 25);
   pdf.setFontSize(11);
-  pdf.text(pdf.splitTextToSize(projectName || "-", 80).slice(0, 2), left, 104);
-  pdf.text(transaction.method, right, 104, { align: "right" });
+  pdf.text(pdf.splitTextToSize(paidFor || "—", 80).slice(0, 2), left, 102);
+  pdf.text(receipt.payment_method || "—", right, 102, { align: "right" });
 
   pdf.setDrawColor(220, 220, 220);
-  pdf.line(left, 118, right, 118);
+  pdf.line(left, 116, right, 116);
   pdf.setTextColor(90, 90, 90);
   pdf.setFontSize(9);
-  pdf.text("PAYMENT REFERENCE", left, 130);
+  pdf.text("AMOUNT PAID", left, 130);
+  pdf.text("PAYMENT REFERENCE", right, 130, { align: "right" });
   pdf.setTextColor(25, 25, 25);
-  pdf.setFontSize(11);
-  pdf.text(transaction.payment_reference || transaction.transaction_ref, right, 130, {
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(16);
+  pdf.text(formatMoney(Number(receipt.amount_paid)), left, 140);
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(9);
+  pdf.text(pdf.splitTextToSize(receipt.payment_reference || "—", 80).slice(0, 2), right, 140, {
     align: "right",
   });
-  pdf.line(left, 140, right, 140);
-
   pdf.setTextColor(90, 90, 90);
   pdf.setFontSize(9);
-  pdf.text("AMOUNT PAID", left, 160);
-  pdf.setTextColor(...navy);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(22);
-  pdf.text(formatMoney(transaction.amount), right, 170, { align: "right" });
+  pdf.text(
+    pdf.splitTextToSize(safeAmountInWords(Number(receipt.amount_paid)), right - left),
+    left,
+    153,
+  );
 
-  const description = transaction.description.trim();
-  if (description) {
-    pdf.setTextColor(90, 90, 90);
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(9);
-    pdf.text(pdf.splitTextToSize(description, right - left).slice(0, 3), left, 188);
+  pdf.setDrawColor(220, 220, 220);
+  pdf.line(left, 166, right, 166);
+  pdf.setTextColor(90, 90, 90);
+  pdf.text("BALANCE REMAINING", left, 179);
+  pdf.setTextColor(25, 25, 25);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(12);
+  pdf.text(formatMoney(Number(receipt.balance)), right, 179, { align: "right" });
+  let detailY = 198;
+  if (receipt.notes) {
+    let remaining = pdf.splitTextToSize(receipt.notes, right - left - 10);
+    let sectionHeading = "NOTES";
+    detailY = 195;
+    while (remaining.length) {
+      if (detailY + 14 > 258) {
+        pdf.addPage();
+        await addDocumentWatermark(pdf);
+        detailY = 24;
+        sectionHeading = "NOTES (CONTINUED)";
+      }
+      const availableLines = Math.max(1, Math.floor((258 - detailY - 10) / 4));
+      const currentLines = remaining.slice(0, availableLines);
+      const noteHeight = currentLines.length * 4 + 10;
+      pdf.setFillColor(247, 249, 252);
+      pdf.rect(left, detailY, right - left, noteHeight, "F");
+      pdf.setDrawColor(...navy);
+      pdf.setLineWidth(0.8);
+      pdf.line(left, detailY, left, detailY + noteHeight);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(8);
+      pdf.setTextColor(...navy);
+      pdf.text(sectionHeading, left + 4, detailY + 5);
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(79, 96, 118);
+      pdf.text(currentLines, left + 4, detailY + 10);
+      detailY += noteHeight + 5;
+      remaining = remaining.slice(currentLines.length);
+      if (remaining.length) {
+        pdf.addPage();
+        await addDocumentWatermark(pdf);
+        detailY = 24;
+        sectionHeading = "NOTES (CONTINUED)";
+      }
+    }
   }
 
+  const details = getDocumentCompanyDetails(settings);
+  if (details.length) {
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(8);
+    pdf.setTextColor(...navy);
+    pdf.text("    CYTIC DETAILS", left, detailY);
+    detailY += 5;
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(7);
+    pdf.setTextColor(70, 70, 70);
+    for (const detail of details) {
+      const lines = pdf.splitTextToSize(`${detail.label}: ${detail.value}`, right - left);
+      const rowHeight = Math.max(4, lines.length * 3.5);
+      if (detailY + rowHeight > 258) {
+        pdf.addPage();
+        await addDocumentWatermark(pdf);
+        detailY = 24;
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(8);
+        pdf.setTextColor(...navy);
+        pdf.text("CYTIC DETAILS (CONTINUED)", left, detailY);
+        detailY += 5;
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(7);
+        pdf.setTextColor(70, 70, 70);
+      }
+      pdf.text(lines, left, detailY);
+      detailY += rowHeight + 1;
+    }
+  }
   pdf.setDrawColor(...gold);
   pdf.setLineWidth(1.5);
-  pdf.line(left, 250, right, 250);
+  pdf.line(left, 280, right, 280);
   pdf.setTextColor(90, 90, 90);
   pdf.setFontSize(8);
-  pdf.text("Issued by CYTIC Creatives", left, 260);
-  pdf.text("A Namielus Group Limited company | Kampala, Uganda", left, 266);
-  pdf.text("This receipt confirms payment received and is not an invoice.", left, 272);
+  pdf.text("CYTIC Creatives. · Kampala, Uganda", left, 286);
+  pdf.text("This receipt confirms payment received and is not an invoice.", left, 291);
   return pdf;
 }
 
 function Page() {
-  const { data, error, loading, refresh } = useBusinessAnalytics();
   const { state } = useAuth();
-  const [selected, setSelected] = useState<FinancialTransaction | null>(null);
-  if (loading || error || !data) {
-    return (
-      <>
-        <PageHeader
-          title="Receipts & Transactions"
-          description="Receipts are created when payments are recorded."
-        />
-        <AnalyticsState loading={loading} error={error} onRetry={() => void refresh()} />
-      </>
-    );
-  }
+  const { settings, error: settingsError } = useDocumentSettings();
+  const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
+  const [projects, setProjects] = useState<ReceiptProject[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [selected, setSelected] = useState<ReceiptRecord | ReceiptDraft | null>(null);
+  const [projectChoice, setProjectChoice] = useState("other");
+  const [customPaidFor, setCustomPaidFor] = useState("");
 
-  const projects = new Map(data.projects.map((project) => [project.id, project]));
-  const receipts = data.transactions.filter(
-    (transaction) => transaction.transaction_type === "income" && transaction.receipt_number,
-  );
-  const selectedProject = selected?.project_id ? projects.get(selected.project_id) : undefined;
-  const canRecordPayment =
-    state.status === "signed-in" && (state.role === "CEO" || state.role === "FINANCE");
-
-  const downloadReceipt = async (transaction: FinancialTransaction) => {
-    const projectName = transaction.project_id
-      ? (projects.get(transaction.project_id)?.name ?? "")
-      : "";
-    const filename = (transaction.receipt_number ?? transaction.transaction_ref).replace(
-      /[^\w.-]/g,
-      "_",
-    );
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const pdf = await createReceiptPdf(transaction, projectName);
-      pdf.save(`${filename}.pdf`);
-    } catch (error) {
+      const result = await getReceiptRecords();
+      setReceipts(result.receipts);
+      setProjects(result.projects);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not load receipt records.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => void refresh(), [refresh]);
+
+  const canIssue = state.status === "signed-in" && ["CEO", "FINANCE"].includes(state.role);
+  const projectById = new Map(projects.map((project) => [project.id, project]));
+  const getPaidFor = (receipt: ReceiptRecord | ReceiptDraft) =>
+    (receipt.project_id ? projectById.get(receipt.project_id)?.name : null) || receipt.paid_for;
+
+  const save = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const amountPaid = Number(form.get("amount_paid"));
+    const balance = Number(form.get("balance"));
+    const selectedProjectId = projectChoice === "other" ? null : projectChoice;
+    const project = selectedProjectId ? projectById.get(selectedProjectId) : null;
+    const paidFor = project?.name ?? customPaidFor.trim();
+    if (!String(form.get("client_name") ?? "").trim()) {
+      toast.error("Enter the client name.");
+      return;
+    }
+    if (!Number.isSafeInteger(amountPaid) || amountPaid <= 0) {
+      toast.error("Enter a positive whole-number amount paid.");
+      return;
+    }
+    if (!Number.isSafeInteger(balance) || balance < 0) {
+      toast.error("Balance must be a non-negative whole-number amount.");
+      return;
+    }
+    if (!paidFor) {
+      toast.error("Choose a project or enter what the payment is for.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await createReceiptRecord({
+        client_name: String(form.get("client_name")).trim(),
+        project_id: selectedProjectId,
+        paid_for: paidFor,
+        receipt_date: String(form.get("receipt_date")),
+        amount_paid: amountPaid,
+        balance,
+        payment_method: String(form.get("payment_method")),
+        payment_reference: String(form.get("payment_reference") ?? "").trim() || null,
+        notes: String(form.get("notes") ?? "").trim(),
+      });
+      toast.success("Receipt issued. Add the income separately in Income & Expenditure.");
+      setCreateOpen(false);
+      setProjectChoice("other");
+      setCustomPaidFor("");
+      formElement.reset();
+      await refresh();
+    } catch (cause) {
       toast.error(
-        `Could not create receipt PDF: ${error instanceof Error ? error.message : String(error)}`,
+        `Could not issue receipt: ${cause instanceof Error ? cause.message : String(cause)}`,
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const draftFromForm = (form: HTMLFormElement): ReceiptDraft => {
+    const values = new FormData(form);
+    const selectedProjectId = projectChoice === "other" ? null : projectChoice;
+    const project = selectedProjectId ? projectById.get(selectedProjectId) : null;
+    return {
+      client_name: String(values.get("client_name") ?? "").trim(),
+      project_id: selectedProjectId,
+      paid_for: project?.name ?? customPaidFor.trim(),
+      receipt_date: String(values.get("receipt_date") ?? ""),
+      amount_paid: Number(values.get("amount_paid")) || 0,
+      balance: Number(values.get("balance")) || 0,
+      payment_method: String(values.get("payment_method") ?? ""),
+      payment_reference: String(values.get("payment_reference") ?? "").trim() || null,
+      notes: String(values.get("notes") ?? "").trim(),
+    };
+  };
+
+  const downloadReceipt = async (receipt: ReceiptRecord | ReceiptDraft) => {
+    if (typeof window.print === "function") {
+      window.print();
+      return;
+    }
+    try {
+      const pdf = await createReceiptPdf(receipt, getPaidFor(receipt), settings);
+      const safeName = (
+        "receipt_number" in receipt ? receipt.receipt_number : "receipt-preview"
+      ).replace(/[^\w.-]/g, "_");
+      pdf.save(`${safeName}.pdf`);
+    } catch (cause) {
+      toast.error(
+        `Could not create receipt PDF: ${cause instanceof Error ? cause.message : String(cause)}`,
       );
     }
   };
 
-  const openReceiptForPrinting = (transaction: FinancialTransaction) => {
-    const projectName = transaction.project_id
-      ? (projects.get(transaction.project_id)?.name ?? "")
-      : "";
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      toast.error("Allow pop-ups to open the receipt for printing, or download its PDF instead.");
+  const remove = async (receipt: ReceiptRecord) => {
+    if (!window.confirm(`Delete receipt ${receipt.receipt_number}? This does not affect income.`)) {
       return;
     }
-    printWindow.opener = null;
-    void createReceiptPdf(transaction, projectName)
-      .then((pdf) => {
-        const pdfUrl = URL.createObjectURL(pdf.output("blob"));
-        printWindow.location.href = pdfUrl;
-        window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 60_000);
-      })
-      .catch((error: unknown) => {
-        printWindow.close();
-        toast.error(
-          `Could not open receipt for printing: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      });
+    try {
+      await deleteReceiptRecord(receipt.id);
+      toast.success("Receipt deleted");
+      await refresh();
+    } catch (cause) {
+      toast.error(
+        `Could not delete receipt: ${cause instanceof Error ? cause.message : String(cause)}`,
+      );
+    }
   };
 
   return (
     <>
       <PageHeader
-        title="Receipts & Transactions"
-        description="Record a payment to create its receipt, then download a PDF to print or share."
+        title="Receipts"
+        description="Issue receipts independently from income. After issuing a receipt, record the payment separately in Income & Expenditure."
         actions={
-          <>
-            {canRecordPayment && (
-              <Button asChild size="sm">
-                <Link to="/analytics/finance">Record payment</Link>
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                downloadCsv(
-                  "receipts.csv",
-                  receipts.map((item) => ({
-                    Receipt: item.receipt_number ?? "",
-                    Date: item.transaction_date,
-                    Client: item.party,
-                    Project: item.project_id ? (projects.get(item.project_id)?.name ?? "") : "",
-                    Amount: item.amount,
-                    Method: item.method,
-                    Reference: item.payment_reference ?? item.transaction_ref,
-                  })),
-                )
-              }
-            >
-              <Download className="size-4" /> Export
+          canIssue ? (
+            <Button size="sm" onClick={() => setCreateOpen(true)}>
+              <Plus className="size-4" /> Issue receipt
             </Button>
-          </>
+          ) : undefined
         }
       />
-      <div className="overflow-x-auto rounded-lg border bg-card shadow-soft">
-        {receipts.length ? (
-          <table className="w-full min-w-[760px] text-sm">
-            <thead>
-              <tr className="border-b text-left text-xs text-muted-foreground">
-                {["Receipt no.", "Date", "Client", "Project", "Payment reference", "Paid"].map(
-                  (heading) => (
-                    <th key={heading} className="px-4 py-3 font-medium">
-                      {heading}
-                    </th>
-                  ),
-                )}
-                <th className="px-4 py-3 text-right font-medium">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {receipts.map((item) => (
-                <tr key={item.id}>
-                  <td className="px-4 py-3 font-mono text-xs">{item.receipt_number}</td>
-                  <td className="px-4 py-3">{item.transaction_date}</td>
-                  <td className="px-4 py-3 font-medium">{item.party}</td>
-                  <td className="px-4 py-3">
-                    {item.project_id ? (projects.get(item.project_id)?.name ?? "—") : "—"}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                    {item.payment_reference ?? item.transaction_ref}
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">{formatMoney(item.amount)}</td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm" onClick={() => setSelected(item)}>
-                        Preview
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        aria-label={`Download receipt ${item.receipt_number} as PDF`}
-                        onClick={() => void downloadReceipt(item)}
-                      >
-                        <Download className="size-4" />
-                        <span className="sr-only">Download PDF</span>
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p className="p-8 text-center text-sm text-muted-foreground">
-            No payment receipts yet. Record income to create the first receipt.
-          </p>
-        )}
-        <p className="border-t px-4 py-2.5 text-xs text-muted-foreground">
-          {receipts.length} receipt{receipts.length === 1 ? "" : "s"} · live Supabase data
+      {settingsError && (
+        <p role="alert" className="mb-4 text-sm text-destructive">
+          Could not load CYTIC contact details: {settingsError}
         </p>
-      </div>
+      )}
+      <AnalyticsState loading={loading} error={error} onRetry={() => void refresh()} />
+      {!loading && !error && (
+        <div className="overflow-x-auto rounded-lg border bg-card shadow-soft">
+          {receipts.length ? (
+            <table className="w-full min-w-[850px] text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs text-muted-foreground">
+                  {["Receipt no.", "Date", "Client", "Paid for", "Amount paid", "Balance"].map(
+                    (heading) => (
+                      <th key={heading} className="px-4 py-3 font-medium">
+                        {heading}
+                      </th>
+                    ),
+                  )}
+                  <th className="px-4 py-3 text-right font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {receipts.map((receipt) => (
+                  <tr key={receipt.id}>
+                    <td className="px-4 py-3 font-mono text-xs">{receipt.receipt_number}</td>
+                    <td className="px-4 py-3">{receipt.receipt_date}</td>
+                    <td className="px-4 py-3 font-medium">{receipt.client_name}</td>
+                    <td className="px-4 py-3">
+                      {receipt.project_id
+                        ? (projectById.get(receipt.project_id)?.name ?? receipt.paid_for)
+                        : receipt.paid_for}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {formatMoney(Number(receipt.amount_paid))}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {formatMoney(Number(receipt.balance))}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setSelected(receipt)}>
+                          <Eye className="size-4" /> Preview
+                        </Button>
+                        {canIssue && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            aria-label={`Delete receipt ${receipt.receipt_number}`}
+                            onClick={() => void remove(receipt)}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="p-8 text-center text-sm text-muted-foreground">
+              No receipts yet. Issue a receipt here; income is entered separately.
+            </p>
+          )}
+          <p className="border-t px-4 py-2.5 text-xs text-muted-foreground">
+            {receipts.length} receipt{receipts.length === 1 ? "" : "s"} · live Supabase data
+          </p>
+        </div>
+      )}
+
+      <Dialog
+        open={createOpen}
+        onOpenChange={(open) => {
+          setCreateOpen(open);
+          if (!open) {
+            setProjectChoice("other");
+            setCustomPaidFor("");
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Issue receipt</DialogTitle>
+            <DialogDescription>
+              Issuing this receipt does not create an income transaction. Record income separately
+              when ready.
+            </DialogDescription>
+          </DialogHeader>
+          <form id="receipt-form" onSubmit={(event) => void save(event)} className="grid gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-1.5">
+                <Label htmlFor="receipt-client">Client name *</Label>
+                <Input id="receipt-client" name="client_name" required />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="receipt-date">Date received *</Label>
+                <Input
+                  id="receipt-date"
+                  name="receipt_date"
+                  type="date"
+                  defaultValue={new Date().toISOString().slice(0, 10)}
+                  required
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="receipt-project">Paid for *</Label>
+                <select
+                  id="receipt-project"
+                  value={projectChoice}
+                  onChange={(event) => setProjectChoice(event.target.value)}
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.name} · {project.client_name}
+                    </option>
+                  ))}
+                  <option value="other">Other / non-project</option>
+                </select>
+                {projectChoice === "other" && (
+                  <Input
+                    aria-label="Other paid for details"
+                    value={customPaidFor}
+                    onChange={(event) => setCustomPaidFor(event.target.value)}
+                    placeholder="Describe what the payment is for"
+                    required
+                  />
+                )}
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="receipt-method">Payment method *</Label>
+                <select
+                  id="receipt-method"
+                  name="payment_method"
+                  defaultValue="Bank transfer"
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                  required
+                >
+                  {["Bank transfer", "Mobile money", "Card", "Cash", "Other"].map((method) => (
+                    <option key={method}>{method}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="receipt-amount">Amount paid (UGX) *</Label>
+                <Input
+                  id="receipt-amount"
+                  name="amount_paid"
+                  type="number"
+                  min="1"
+                  step="1"
+                  required
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="receipt-balance">Balance remaining (UGX) *</Label>
+                <Input
+                  id="receipt-balance"
+                  name="balance"
+                  type="number"
+                  min="0"
+                  step="1"
+                  defaultValue="0"
+                  required
+                />
+              </div>
+              <div className="grid gap-1.5 sm:col-span-2">
+                <Label htmlFor="receipt-reference">Payment reference</Label>
+                <Input id="receipt-reference" name="payment_reference" />
+              </div>
+              <div className="grid gap-1.5 sm:col-span-2">
+                <Label htmlFor="receipt-notes">Notes</Label>
+                <textarea
+                  id="receipt-notes"
+                  name="notes"
+                  rows={2}
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={(event) => {
+                  const form = event.currentTarget.form;
+                  if (form) setSelected(draftFromForm(form));
+                }}
+              >
+                <Eye className="size-4" /> Preview receipt
+              </Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? "Issuing…" : "Issue receipt"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="max-w-2xl gap-0 overflow-hidden p-0">
+        <DialogContent className="document-dialog max-h-[90vh] max-w-[210mm] gap-0 overflow-y-auto p-0">
           <DialogHeader className="sr-only">
             <DialogTitle>Receipt preview</DialogTitle>
           </DialogHeader>
           {selected && (
-            <ReceiptDocument transaction={selected} projectName={selectedProject?.name ?? ""} />
+            <ReceiptDocument
+              receipt={selected}
+              paidFor={getPaidFor(selected)}
+              settings={settings}
+            />
           )}
           <div className="flex justify-end gap-2 border-t bg-muted/50 px-6 py-3">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => selected && openReceiptForPrinting(selected)}
+              onClick={() => selected && void downloadReceipt(selected)}
             >
-              <Printer className="size-4" /> Print
-            </Button>
-            <Button size="sm" onClick={() => selected && void downloadReceipt(selected)}>
-              <Download className="size-4" /> Save as PDF
+              <Printer className="size-4" /> Print / Save as PDF
             </Button>
           </div>
         </DialogContent>

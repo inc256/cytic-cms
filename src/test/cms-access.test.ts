@@ -38,6 +38,44 @@ describe("CMS role access", () => {
     expect(findCrumbs("/designer-workspace/")).toEqual(["Designer Workspace", "Designer Overview"]);
   });
 
+  it("includes the dedicated Projects page in Business Analytics", () => {
+    expect(findCrumbs("/analytics/projects")).toEqual(["Business Analytics", "Projects"]);
+    expect(canAccessPath("CEO", "/analytics/projects")).toBe(true);
+    expect(canAccessPath("FINANCE", "/analytics/projects")).toBe(true);
+    expect(canAccessPath("SECRETARY", "/analytics/projects")).toBe(true);
+    expect(canAccessPath("CONTENT EDITOR", "/analytics/projects")).toBe(false);
+  });
+
+  it("places Quotations in Business Analytics and grants its roles access", () => {
+    expect(findCrumbs("/website/proposals")).toEqual(["Business Analytics", "Quotations"]);
+    expect(canAccessPath("CEO", "/website/proposals")).toBe(true);
+    expect(canAccessPath("FINANCE", "/website/proposals")).toBe(true);
+    expect(canAccessPath("SECRETARY", "/website/proposals")).toBe(true);
+    expect(canAccessPath("CONTENT EDITOR", "/website/proposals")).toBe(false);
+  });
+
+  it("keeps General Settings CEO-only and exposes landing quotes to analytics roles", () => {
+    expect(findCrumbs("/settings")).toEqual(["General Settings"]);
+    expect(canAccessPath("CEO", "/settings")).toBe(true);
+    expect(canAccessPath("FINANCE", "/settings")).toBe(false);
+    expect(findCrumbs("/website/inquiries")).toEqual(["Business Analytics", "Landing Page Quotes"]);
+    expect(canAccessPath("FINANCE", "/website/inquiries")).toBe(true);
+    expect(canAccessPath("PARTNER", "/website/inquiries")).toBe(true);
+    expect(canAccessPath("SECRETARY", "/website/inquiries")).toBe(true);
+    expect(canAccessPath("CONTENT EDITOR", "/website/inquiries")).toBe(true);
+  });
+
+  it("keeps Receipts & Transactions under Business Analytics", () => {
+    expect(findCrumbs("/analytics/receipts")).toEqual([
+      "Business Analytics",
+      "Receipts & Transactions",
+    ]);
+    expect(canAccessPath("CEO", "/analytics/receipts")).toBe(true);
+    expect(canAccessPath("FINANCE", "/analytics/receipts")).toBe(true);
+    expect(canAccessPath("SECRETARY", "/analytics/receipts")).toBe(true);
+    expect(canAccessPath("INVESTOR", "/analytics/receipts")).toBe(false);
+  });
+
   it("shows overview to CEO, finance, investor, partner, and secretary", () => {
     for (const role of ["CEO", "FINANCE", "INVESTOR", "PARTNER", "SECRETARY"] as const) {
       expect(canAccessPath(role, "/")).toBe(true);
@@ -53,12 +91,10 @@ describe("CMS role access", () => {
     expect(canAccessPath("PARTNER", "/analytics/finance")).toBe(false);
     expect(canAccessPath("SECRETARY", "/analytics/finance")).toBe(true);
     expect(canAccessPath("INVESTOR", "/website/inquiries")).toBe(false);
-    expect(canAccessPath("PARTNER", "/website/inquiries")).toBe(false);
     expect(canAccessPath("FINANCE", "/analytics/receipts")).toBe(true);
     expect(canAccessPath("FINANCE", "/analytics/invoices")).toBe(true);
     expect(canAccessPath("SECRETARY", "/analytics/invoices")).toBe(false);
     expect(canAccessPath("INVESTOR", "/analytics/invoices")).toBe(false);
-    expect(canAccessPath("FINANCE", "/website/inquiries")).toBe(false);
     expect(defaultPathForRole("SECRETARY")).toBe("/");
   });
 
@@ -68,8 +104,6 @@ describe("CMS role access", () => {
       "/website/portfolio",
       "/website/blog",
       "/website/quote",
-      "/website/inquiries",
-      "/website/proposals",
       "/website/settings",
     ]) {
       expect(canAccessPath("CEO", path)).toBe(true);

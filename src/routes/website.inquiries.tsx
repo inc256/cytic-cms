@@ -91,6 +91,8 @@ function Page() {
   const canManage =
     state.status === "signed-in" &&
     ["CEO", "CONTENT EDITOR", "PARTNER", "SECRETARY"].includes(state.role);
+  const canUpdateStatus = canManage || (state.status === "signed-in" && state.role === "FINANCE");
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const filtered = useMemo(() => {
     const needle = query.toLowerCase();
     return rows.filter((row) =>
@@ -109,9 +111,11 @@ function Page() {
     const result = await supabase.from("quote_requests").update({ status }).eq("id", id);
     if (result.error) {
       toast.error(`Could not update inquiry: ${result.error.message}`);
+      setStatusMessage(`Could not update quote request: ${result.error.message}`);
       return;
     }
     toast.success("Inquiry status updated");
+    setStatusMessage("Quote request status updated successfully.");
     await refresh();
   };
 
@@ -188,9 +192,14 @@ function Page() {
   return (
     <>
       <PageHeader
-        title="Inquiries & Leads"
-        description="Live requests submitted through the existing quote-request form."
+        title="Landing Page Quotes"
+        description="Review and respond to self-quote requests submitted through the landing page."
       />
+      {statusMessage && (
+        <p role="status" className="mb-4 text-sm text-muted-foreground">
+          {statusMessage}
+        </p>
+      )}
       <div className="relative mb-4 max-w-sm">
         <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -247,7 +256,7 @@ function Page() {
                     <td className="px-3 py-3">
                       <Select
                         value={row.status}
-                        disabled={!canManage}
+                        disabled={!canUpdateStatus}
                         onValueChange={(value) => void updateStatus(row.id, value)}
                       >
                         <SelectTrigger className="h-8 w-36">
