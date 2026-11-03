@@ -1,22 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
-import { Eye, Pencil, Plus, Printer, Trash2 } from "lucide-react";
+import { Fragment, useState, type FormEvent } from "react";
+import { ChevronDown, Eye, Pencil, Plus, Printer, Trash2 } from "lucide-react";
 import type { jsPDF } from "jspdf";
 import { toast } from "sonner";
 
 import { AnalyticsState } from "@/components/cms/analytics-state";
 import { DocumentPreview } from "@/components/cms/document-preview";
+import { DocumentSignatureSelector } from "@/components/cms/document-signature-selector";
 import { PageHeader } from "@/components/cms/primitives";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDocumentSettings } from "@/hooks/use-document-settings";
+import { useDocumentSignatories } from "@/hooks/use-document-signatories";
 import { useWebsiteRows } from "@/hooks/use-website-rows";
 import {
   deleteWebsiteRow,
   getDigitalSignatureDataUrl,
   getDocumentCompanyDetails,
+  resolveDocumentSignature,
   saveWebsiteRow,
   type DocumentSettings,
 } from "@/lib/website-cms";
@@ -39,6 +42,8 @@ type Proposal = {
   client_phone: string | null;
   client_address: string | null;
   digital_signature_path: string | null;
+  digital_signature_user_id: string | null;
+  digital_signature_name: string | null;
   notes: string;
   terms_conditions: string;
   title: string;
@@ -233,6 +238,10 @@ async function createProposalPdf(proposal: Proposal, settings: DocumentSettings)
   pdf.text("Authorized signature", left, y);
   if (signature) {
     pdf.addImage(signature, "PNG", left, y + 3, 42, 18);
+    if (proposal.digital_signature_name) {
+      pdf.setFontSize(7);
+      pdf.text(proposal.digital_signature_name, left, y + 25);
+    }
   } else {
     pdf.setDrawColor(120, 120, 120);
     pdf.line(left, y + 22, left + 58, y + 22);
@@ -253,6 +262,11 @@ async function createProposalPdf(proposal: Proposal, settings: DocumentSettings)
 function Page() {
   const { rows, loading, error, refresh } = useWebsiteRows<Proposal>("cms_proposals");
   const { settings: companySettings, error: settingsError } = useDocumentSettings();
+  const {
+    signatories,
+    error: signatoryError,
+    loading: signatoriesLoading,
+  } = useDocumentSignatories();
   const [open, setOpen] = useState(false);
   const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
   const [client, setClient] = useState("");
@@ -268,8 +282,15 @@ function Page() {
   const [items, setItems] = useState<LineItem[]>([{ description: "", amount: 0 }]);
   const [saving, setSaving] = useState(false);
   const [includeSignature, setIncludeSignature] = useState(false);
+  const [signatureSource, setSignatureSource] = useState("");
   const [previewProposal, setPreviewProposal] = useState<Proposal | null>(null);
+  const [expandedItems, setExpandedItems] = useState<string | null>(null);
   const total = items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const companySignaturePath =
+    companySettings.digital_signature_path ??
+    (editingProposal && !editingProposal.digital_signature_user_id
+      ? editingProposal.digital_signature_path
+      : null);
 
   const resetForm = () => {
     setEditingProposal(null);
@@ -285,6 +306,7 @@ function Page() {
     setStatus("Draft");
     setItems([{ description: "", amount: 0 }]);
     setIncludeSignature(false);
+    setSignatureSource("");
   };
 
   const editProposal = (proposal: Proposal) => {
@@ -301,6 +323,9 @@ function Page() {
     setStatus(proposal.status);
     setItems(proposal.line_items.length ? proposal.line_items : [{ description: "", amount: 0 }]);
     setIncludeSignature(Boolean(proposal.digital_signature_path));
+    setSignatureSource(
+      proposal.digital_signature_user_id ?? (proposal.digital_signature_path ? "company" : ""),
+    );
     setOpen(true);
   };
 
@@ -315,6 +340,18 @@ function Page() {
       toast.error("Line item amounts must be non-negative whole UGX amounts.");
       return;
     }
+    let signature: ReturnType<typeof resolveDocumentSignature>;
+    try {
+      signature = resolveDocumentSignature(
+        includeSignature,
+        signatureSource,
+        companySignaturePath,
+        signatories,
+      );
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Choose a valid document signatory.");
+      return;
+    }
     setSaving(true);
     try {
       await saveWebsiteRow(
@@ -324,7 +361,9 @@ function Page() {
           client_email: clientEmail.trim() || null,
           client_phone: clientPhone.trim() || null,
           client_address: clientAddress.trim() || null,
-          digital_signature_path: includeSignature ? companySettings.digital_signature_path : null,
+          digital_signature_path: signature.path,
+          digital_signature_user_id: signature.userId,
+          digital_signature_name: signature.name,
           notes: notes.trim(),
           terms_conditions: termsConditions.trim(),
           title: title.trim(),
@@ -424,6 +463,7 @@ function Page() {
                     "Title",
                     "Status",
                     "Valid until",
+                    "Items",
                     "Value",
                     "Actions",
                   ].map((heading) => (
@@ -435,40 +475,103 @@ function Page() {
               </thead>
               <tbody className="divide-y">
                 {rows.map((row) => (
-                  <tr key={row.id}>
-                    <td className="px-4 py-3 font-mono text-xs">{row.proposal_code}</td>
-                    <td className="px-4 py-3 font-medium">{row.client}</td>
-                    <td className="px-4 py-3">{row.title}</td>
-                    <td className="px-4 py-3">
-                      <select
-                        aria-label={`Status for ${row.proposal_code}`}
-                        className="h-8 rounded-md border bg-background px-2"
-                        value={row.status}
-                        onChange={(event) => void updateStatus(row, event.target.value)}
-                      >
-                        {["Draft", "Sent", "Accepted", "Declined"].map((item) => (
-                          <option key={item}>{item}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-4 py-3">{row.valid_until ?? "—"}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      {formatMoney(Number(row.value))}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => editProposal(row)}>
-                          <Pencil className="size-4" /> Edit
+                  <Fragment key={row.id}>
+                    <tr>
+                      <td className="px-4 py-3 font-mono text-xs">{row.proposal_code}</td>
+                      <td className="max-w-48 whitespace-normal break-words px-4 py-3 font-medium">
+                        {row.client}
+                      </td>
+                      <td className="max-w-64 whitespace-normal break-words px-4 py-3">
+                        {row.title}
+                      </td>
+                      <td className="px-4 py-3">
+                        <select
+                          aria-label={`Status for ${row.proposal_code}`}
+                          className="h-8 rounded-md border bg-background px-2"
+                          value={row.status}
+                          onChange={(event) => void updateStatus(row, event.target.value)}
+                        >
+                          {["Draft", "Sent", "Accepted", "Declined"].map((item) => (
+                            <option key={item}>{item}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3">{row.valid_until ?? "—"}</td>
+                      <td className="px-4 py-3">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          aria-expanded={expandedItems === row.id}
+                          aria-controls={`quotation-items-${row.id}`}
+                          onClick={() =>
+                            setExpandedItems((current) => (current === row.id ? null : row.id))
+                          }
+                        >
+                          <ChevronDown
+                            className={`size-4 transition-transform ${expandedItems === row.id ? "rotate-180" : ""}`}
+                          />
+                          {row.line_items.length} item{row.line_items.length === 1 ? "" : "s"}
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => setPreviewProposal(row)}>
-                          <Eye className="size-4" /> Preview / Print
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => void remove(row)}>
-                          <Trash2 className="size-4" /> Delete
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums">
+                        {formatMoney(Number(row.value))}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => editProposal(row)}>
+                            <Pencil className="size-4" /> Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPreviewProposal(row)}
+                          >
+                            <Eye className="size-4" /> Preview / Print
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => void remove(row)}>
+                            <Trash2 className="size-4" /> Delete
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                    {expandedItems === row.id && (
+                      <tr className="bg-muted/30">
+                        <td colSpan={8} className="px-4 py-4">
+                          <div
+                            id={`quotation-items-${row.id}`}
+                            className="mx-auto max-w-5xl space-y-3"
+                          >
+                            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              <span>Item description</span>
+                              <span className="text-right">Amount</span>
+                            </div>
+                            {row.line_items.map((item, index) => (
+                              <div
+                                key={`${row.id}-item-${index}`}
+                                className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 border-b border-dashed pb-3 last:border-0"
+                              >
+                                <div className="min-w-0">
+                                  <p className="mb-1 text-xs text-muted-foreground">
+                                    Item {index + 1}
+                                  </p>
+                                  <p className="whitespace-pre-wrap break-words text-sm">
+                                    {item.description}
+                                  </p>
+                                </div>
+                                <p className="max-w-40 break-words text-right text-sm font-medium tabular-nums">
+                                  {formatMoney(Number(item.amount))}
+                                </p>
+                              </div>
+                            ))}
+                            {!row.line_items.length && (
+                              <p className="text-sm text-muted-foreground">No items recorded.</p>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
@@ -556,20 +659,16 @@ function Page() {
                 />
               </div>
             </div>
-            <label className="flex items-start gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={includeSignature}
-                disabled={!companySettings.digital_signature_path}
-                onChange={(event) => setIncludeSignature(event.target.checked)}
-                className="mt-1"
-              />
-              <span>
-                Use the saved digital signature (otherwise leave a handwritten signature line)
-                {!companySettings.digital_signature_path &&
-                  " (upload one in General Settings first)"}
-              </span>
-            </label>
+            <DocumentSignatureSelector
+              checked={includeSignature}
+              onCheckedChange={setIncludeSignature}
+              selection={signatureSource}
+              onSelectionChange={setSignatureSource}
+              signatories={signatories}
+              companySignatureAvailable={Boolean(companySignaturePath)}
+              loading={signatoriesLoading}
+              error={signatoryError}
+            />
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-1.5">
                 <Label htmlFor="proposal-notes">Notes (optional)</Label>
@@ -595,50 +694,76 @@ function Page() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Line items</Label>
-              {items.map((item, index) => (
-                <div key={index} className="flex gap-2">
-                  <Input
-                    aria-label="Line item description"
-                    value={item.description}
-                    onChange={(e) =>
-                      setItems(
-                        items.map((value, i) =>
-                          i === index ? { ...value, description: e.target.value } : value,
-                        ),
-                      )
-                    }
-                    required
-                  />
-                  <Input
-                    aria-label="Line item amount"
-                    type="number"
-                    min="0"
-                    step="1"
-                    className="w-40"
-                    value={item.amount}
-                    onChange={(e) =>
-                      setItems(
-                        items.map((value, i) =>
-                          i === index ? { ...value, amount: Number(e.target.value) } : value,
-                        ),
-                      )
-                    }
-                    required
-                  />
-                  {items.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setItems(items.filter((_, i) => i !== index))}
-                      aria-label="Remove line item"
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Label>Line items ({items.length})</Label>
+                <span className="text-sm font-medium tabular-nums">
+                  Subtotal: {formatMoney(total)}
+                </span>
+              </div>
+              <div className="max-h-[42vh] space-y-3 overflow-y-auto pr-1">
+                {items.map((item, index) => (
+                  <section
+                    key={index}
+                    className="grid gap-3 rounded-lg border bg-muted/20 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(150px,200px)_auto]"
+                  >
+                    <div className="grid min-w-0 gap-1.5">
+                      <Label htmlFor={`proposal-item-description-${index}`}>
+                        Item {index + 1} description
+                      </Label>
+                      <textarea
+                        id={`proposal-item-description-${index}`}
+                        aria-label={`Line item ${index + 1} description`}
+                        rows={3}
+                        value={item.description}
+                        onChange={(event) =>
+                          setItems(
+                            items.map((value, i) =>
+                              i === index ? { ...value, description: event.target.value } : value,
+                            ),
+                          )
+                        }
+                        className="min-h-20 w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        placeholder="Describe the service, deliverables, scope, or other details"
+                        required
+                      />
+                    </div>
+                    <div className="grid content-start gap-1.5">
+                      <Label htmlFor={`proposal-item-amount-${index}`}>Amount (UGX)</Label>
+                      <Input
+                        id={`proposal-item-amount-${index}`}
+                        aria-label={`Line item ${index + 1} amount`}
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={item.amount}
+                        onChange={(event) =>
+                          setItems(
+                            items.map((value, i) =>
+                              i === index
+                                ? { ...value, amount: Number(event.target.value) }
+                                : value,
+                            ),
+                          )
+                        }
+                        required
+                      />
+                    </div>
+                    <div className="flex justify-end sm:pt-6">
+                      {items.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setItems(items.filter((_, i) => i !== index))}
+                          aria-label={`Remove line item ${index + 1}`}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </section>
+                ))}
+              </div>
               <Button
                 type="button"
                 variant="outline"
@@ -677,7 +802,23 @@ function Page() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() =>
+                  onClick={() => {
+                    let signature: ReturnType<typeof resolveDocumentSignature>;
+                    try {
+                      signature = resolveDocumentSignature(
+                        includeSignature,
+                        signatureSource,
+                        companySignaturePath,
+                        signatories,
+                      );
+                    } catch (cause) {
+                      toast.error(
+                        cause instanceof Error
+                          ? cause.message
+                          : "Choose a valid document signatory.",
+                      );
+                      return;
+                    }
                     setPreviewProposal({
                       id: "preview",
                       proposal_code: "DRAFT PREVIEW",
@@ -686,9 +827,9 @@ function Page() {
                       client_email: clientEmail.trim() || null,
                       client_phone: clientPhone.trim() || null,
                       client_address: clientAddress.trim() || null,
-                      digital_signature_path: includeSignature
-                        ? companySettings.digital_signature_path
-                        : null,
+                      digital_signature_path: signature.path,
+                      digital_signature_user_id: signature.userId,
+                      digital_signature_name: signature.name,
                       notes: notes.trim(),
                       terms_conditions: termsConditions.trim(),
                       title,
@@ -698,8 +839,8 @@ function Page() {
                       valid_until: validUntil || null,
                       created_at: new Date().toISOString(),
                       updated_at: new Date().toISOString(),
-                    })
-                  }
+                    });
+                  }}
                 >
                   <Eye className="size-4" /> Preview
                 </Button>
@@ -736,6 +877,7 @@ function Page() {
                 },
               ].filter((detail): detail is { label: string; value: string } => Boolean(detail))}
               digitalSignaturePath={previewProposal.digital_signature_path}
+              digitalSignatureName={previewProposal.digital_signature_name}
               title={previewProposal.title}
               issueDate={previewProposal.created_at.slice(0, 10)}
               secondaryLabel="Valid until"

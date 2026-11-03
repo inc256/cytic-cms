@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/components/auth/auth-context";
 import { AnalyticsState } from "@/components/cms/analytics-state";
 import { DocumentPreview } from "@/components/cms/document-preview";
+import { DocumentSignatureSelector } from "@/components/cms/document-signature-selector";
 import { PageHeader, StatusBadge } from "@/components/cms/primitives";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,10 +24,12 @@ import { formatMoney } from "@/lib/format";
 import { getSupabaseClient } from "@/lib/supabase";
 import { addDocumentWatermark } from "@/lib/document-logo";
 import { useDocumentSettings } from "@/hooks/use-document-settings";
+import { useDocumentSignatories } from "@/hooks/use-document-signatories";
 import {
   getDigitalSignatureDataUrl,
   getDocumentBankDetails,
   getDocumentCompanyDetails,
+  resolveDocumentSignature,
   type DocumentSettings,
 } from "@/lib/website-cms";
 import { meta } from "@/lib/seo";
@@ -45,6 +48,8 @@ type Invoice = {
   client_address: string;
   client_phone: string;
   digital_signature_path: string | null;
+  digital_signature_user_id: string | null;
+  digital_signature_name: string | null;
   project_id: string | null;
   issue_date: string;
   due_date: string;
@@ -62,6 +67,7 @@ async function createInvoicePdf(
   invoice: Invoice,
   companySettings: DocumentSettings,
   signatureDataUrl?: string | null,
+  signatureName?: string | null,
 ): Promise<jsPDF> {
   const { jsPDF: PdfDocument } = await import("jspdf");
   const pdf = new PdfDocument({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -231,6 +237,10 @@ async function createInvoicePdf(
   pdf.text("Authorized signature", left, y);
   if (signatureDataUrl) {
     pdf.addImage(signatureDataUrl, "PNG", left, y + 3, 42, 18);
+    if (signatureName) {
+      pdf.setFontSize(7);
+      pdf.text(signatureName, left, y + 25);
+    }
   } else {
     pdf.setDrawColor(120, 120, 120);
     pdf.line(left, y + 22, left + 58, y + 22);
@@ -277,6 +287,11 @@ async function createInvoicePdf(
 function Page() {
   const { state } = useAuth();
   const { settings: companySettings, error: settingsError } = useDocumentSettings(true);
+  const {
+    signatories,
+    error: signatoryError,
+    loading: signatoriesLoading,
+  } = useDocumentSignatories();
   const canManage = state.status === "signed-in" && ["CEO", "FINANCE"].includes(state.role);
   const [rows, setRows] = useState<Invoice[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -290,6 +305,12 @@ function Page() {
   const [lines, setLines] = useState<InvoiceLine[]>([{ description: "", amount: 0 }]);
   const [projectId, setProjectId] = useState("");
   const [includeSignature, setIncludeSignature] = useState(false);
+  const [signatureSource, setSignatureSource] = useState("");
+  const companySignaturePath =
+    companySettings.digital_signature_path ??
+    (editingInvoice && !editingInvoice.digital_signature_user_id
+      ? editingInvoice.digital_signature_path
+      : null);
 
   const refresh = useCallback(async () => {
     const supabase = getSupabaseClient();
@@ -323,6 +344,7 @@ function Page() {
     setLines([{ description: "", amount: 0 }]);
     setProjectId("");
     setIncludeSignature(false);
+    setSignatureSource("");
     setEditingInvoice(null);
   };
 
@@ -347,13 +369,27 @@ function Page() {
       toast.error("Supabase is not configured.");
       return;
     }
+    let signature: ReturnType<typeof resolveDocumentSignature>;
+    try {
+      signature = resolveDocumentSignature(
+        includeSignature,
+        signatureSource,
+        companySignaturePath,
+        signatories,
+      );
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Choose a valid document signatory.");
+      return;
+    }
     setSaving(true);
     const invoiceData = {
       client: String(form.get("client")).trim(),
       client_email: String(form.get("client_email") ?? "").trim() || null,
       client_address: String(form.get("client_address") ?? "").trim(),
       client_phone: String(form.get("client_phone") ?? "").trim(),
-      digital_signature_path: includeSignature ? companySettings.digital_signature_path : null,
+      digital_signature_path: signature.path,
+      digital_signature_user_id: signature.userId,
+      digital_signature_name: signature.name,
       project_id: projectId || null,
       issue_date: String(form.get("issue_date")),
       due_date: String(form.get("due_date")),
@@ -383,6 +419,9 @@ function Page() {
     setLines(invoice.line_items);
     setProjectId(invoice.project_id ?? "");
     setIncludeSignature(Boolean(invoice.digital_signature_path));
+    setSignatureSource(
+      invoice.digital_signature_user_id ?? (invoice.digital_signature_path ? "company" : ""),
+    );
     setCreateOpen(true);
   };
 
@@ -460,7 +499,12 @@ function Page() {
       const signatureDataUrl = invoice.digital_signature_path
         ? await getDigitalSignatureDataUrl(invoice.digital_signature_path)
         : null;
-      const pdf = await createInvoicePdf(invoice, companySettings, signatureDataUrl);
+      const pdf = await createInvoicePdf(
+        invoice,
+        companySettings,
+        signatureDataUrl,
+        invoice.digital_signature_name,
+      );
       pdf.save(`${invoice.invoice_number}.pdf`);
     } catch (cause) {
       toast.error(
@@ -709,20 +753,16 @@ function Page() {
                 />
               </div>
             </div>
-            <label className="flex items-start gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={includeSignature}
-                disabled={!companySettings.digital_signature_path}
-                onChange={(event) => setIncludeSignature(event.target.checked)}
-                className="mt-1"
-              />
-              <span>
-                Use the saved digital signature (otherwise leave a handwritten signature line)
-                {!companySettings.digital_signature_path &&
-                  " (upload one in General Settings first)"}
-              </span>
-            </label>
+            <DocumentSignatureSelector
+              checked={includeSignature}
+              onCheckedChange={setIncludeSignature}
+              selection={signatureSource}
+              onSelectionChange={setSignatureSource}
+              signatories={signatories}
+              companySignatureAvailable={Boolean(companySignaturePath)}
+              loading={signatoriesLoading}
+              error={signatoryError}
+            />
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Line items *</Label>
@@ -812,6 +852,20 @@ function Page() {
                   if (!form) return;
                   const values = new FormData(form);
                   const items = lines.filter((line) => line.description.trim());
+                  let signature: ReturnType<typeof resolveDocumentSignature>;
+                  try {
+                    signature = resolveDocumentSignature(
+                      includeSignature,
+                      signatureSource,
+                      companySignaturePath,
+                      signatories,
+                    );
+                  } catch (cause) {
+                    toast.error(
+                      cause instanceof Error ? cause.message : "Choose a valid document signatory.",
+                    );
+                    return;
+                  }
                   setPreviewInvoice({
                     id: "preview",
                     invoice_number: editingInvoice?.invoice_number ?? "DRAFT PREVIEW",
@@ -819,9 +873,9 @@ function Page() {
                     client_email: String(values.get("client_email") ?? "") || null,
                     client_address: String(values.get("client_address") ?? "").trim(),
                     client_phone: String(values.get("client_phone") ?? "").trim(),
-                    digital_signature_path: includeSignature
-                      ? companySettings.digital_signature_path
-                      : null,
+                    digital_signature_path: signature.path,
+                    digital_signature_user_id: signature.userId,
+                    digital_signature_name: signature.name,
                     project_id: projectId || null,
                     issue_date: String(values.get("issue_date") ?? ""),
                     due_date: String(values.get("due_date") ?? ""),
@@ -899,6 +953,7 @@ function Page() {
                 },
               ].filter((detail): detail is { label: string; value: string } => Boolean(detail))}
               digitalSignaturePath={previewInvoice.digital_signature_path}
+              digitalSignatureName={previewInvoice.digital_signature_name}
               issueDate={previewInvoice.issue_date}
               secondaryLabel="Due date"
               secondaryValue={previewInvoice.due_date}

@@ -1,6 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState, type FormEvent } from "react";
-import { Pencil, Search, Trash2 } from "lucide-react";
+import {
+  Building2,
+  CalendarDays,
+  ChevronRight,
+  Mail,
+  Pencil,
+  Phone,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-context";
@@ -10,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -65,27 +75,36 @@ const statuses = [
   "Declined",
 ];
 
-function servicesText(value: unknown): string {
-  if (!Array.isArray(value)) return "—";
-  return (
-    value
-      .map((item) => {
-        if (typeof item === "string") return item;
-        if (item && typeof item === "object") {
-          const entry = item as Record<string, unknown>;
-          return String(entry["name"] ?? entry["label"] ?? entry["title"] ?? entry["id"] ?? "");
-        }
-        return "";
-      })
-      .filter(Boolean)
-      .join(", ") || "—"
-  );
+function serviceNames(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (typeof item === "string") return item;
+      if (item && typeof item === "object") {
+        const entry = item as Record<string, unknown>;
+        return String(entry["name"] ?? entry["label"] ?? entry["title"] ?? entry["id"] ?? "");
+      }
+      return "";
+    })
+    .filter(Boolean);
+}
+
+function formatRequestDate(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Date unavailable"
+    : new Intl.DateTimeFormat(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      }).format(date);
 }
 
 function Page() {
   const { state } = useAuth();
   const { rows, loading, error, refresh } = useWebsiteRows<QuoteRequest>("quote_requests");
   const [query, setQuery] = useState("");
+  const [selectedQuote, setSelectedQuote] = useState<QuoteRequest | null>(null);
   const [editing, setEditing] = useState<QuoteRequest | null>(null);
   const [saving, setSaving] = useState(false);
   const canManage =
@@ -116,6 +135,7 @@ function Page() {
     }
     toast.success("Inquiry status updated");
     setStatusMessage("Quote request status updated successfully.");
+    setSelectedQuote((current) => (current?.id === id ? { ...current, status } : current));
     await refresh();
   };
 
@@ -186,6 +206,7 @@ function Page() {
       return;
     }
     toast.success("Inquiry deleted");
+    setSelectedQuote((current) => (current?.id === inquiry.id ? null : current));
     await refresh();
   };
 
@@ -212,105 +233,73 @@ function Page() {
       </div>
       <AnalyticsState loading={loading} error={error} onRetry={() => void refresh()} />
       {!loading && !error && (
-        <div className="overflow-x-auto rounded-lg border bg-card">
+        <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
           {filtered.length ? (
-            <table className="w-full min-w-[1100px] text-sm">
-              <thead>
-                <tr className="border-b text-left text-xs text-muted-foreground">
-                  {[
-                    "Quote",
-                    "Contact",
-                    "Business",
-                    "Services",
-                    "Estimate",
-                    "Received",
-                    "Status",
-                    "Details",
-                    ...(canManage ? ["Actions"] : []),
-                  ].map((heading) => (
-                    <th key={heading} className="px-3 py-3 font-medium">
-                      {heading}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {filtered.map((row) => (
-                  <tr key={row.id} className="align-top">
-                    <td className="px-3 py-3 font-mono text-xs">{row.quote_id}</td>
-                    <td className="px-3 py-3">
-                      <div className="font-medium">{row.full_name}</div>
-                      <a className="text-xs text-primary underline" href={`mailto:${row.email}`}>
-                        {row.email}
-                      </a>
-                      <div className="text-xs text-muted-foreground">{row.phone}</div>
-                    </td>
-                    <td className="px-3 py-3">{row.business_name}</td>
-                    <td className="max-w-48 px-3 py-3">{servicesText(row.selected_services)}</td>
-                    <td className="whitespace-nowrap px-3 py-3 tabular-nums">
-                      {formatMoney(Number(row.estimated_price))}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-3">
-                      {new Date(row.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-3 py-3">
-                      <Select
-                        value={row.status}
-                        disabled={!canUpdateStatus}
-                        onValueChange={(value) => void updateStatus(row.id, value)}
-                      >
-                        <SelectTrigger className="h-8 w-36">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {statuses.map((status) => (
-                            <SelectItem key={status} value={status}>
-                              {status}
-                            </SelectItem>
+            <ul className="divide-y">
+              {filtered.map((row) => {
+                const requestedServices = serviceNames(row.selected_services);
+                return (
+                  <li key={row.id}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedQuote(row)}
+                      className="grid w-full gap-3 px-4 py-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-5"
+                      aria-label={`View quote ${row.quote_id} from ${row.full_name}`}
+                    >
+                      <span className="min-w-0">
+                        <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span className="font-mono text-xs font-semibold text-primary">
+                            {row.quote_id}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {formatRequestDate(row.created_at)}
+                          </span>
+                        </span>
+                        <span className="mt-1 block truncate font-semibold">
+                          {row.full_name}
+                          {row.business_name ? (
+                            <span className="font-normal text-muted-foreground">
+                              {" "}
+                              · {row.business_name}
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="mt-1 block truncate text-sm text-muted-foreground">
+                          {row.email}
+                          {row.phone ? ` · ${row.phone}` : ""}
+                        </span>
+                        <span className="mt-2 flex flex-wrap gap-1.5">
+                          {requestedServices.slice(0, 3).map((service, index) => (
+                            <span
+                              key={`${row.id}-service-${index}`}
+                              className="max-w-56 truncate rounded-full border bg-muted/40 px-2 py-0.5 text-xs"
+                            >
+                              {service}
+                            </span>
                           ))}
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="max-w-64 px-3 py-3 text-xs text-muted-foreground">
-                      <details>
-                        <summary className="cursor-pointer text-primary">View brief</summary>
-                        <div className="mt-2 space-y-1">
-                          <p>{row.project_description}</p>
-                          <p>Industry: {row.industry}</p>
-                          <p>Stage: {row.business_stage}</p>
-                          <p>Timeline: {row.timeline}</p>
-                          <p>Preferred contact: {row.preferred_contact}</p>
-                          {row.current_website && <p>Website: {row.current_website}</p>}
-                          {row.online_presence && <p>Online presence: {row.online_presence}</p>}
-                        </div>
-                      </details>
-                    </td>
-                    {canManage && (
-                      <td className="px-3 py-3">
-                        <div className="flex gap-2">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            aria-label={`Edit inquiry ${row.quote_id}`}
-                            onClick={() => editInquiry(row)}
-                          >
-                            <Pencil className="size-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            aria-label={`Delete inquiry ${row.quote_id}`}
-                            onClick={() => void deleteInquiry(row)}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                          {requestedServices.length > 3 && (
+                            <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                              +{requestedServices.length - 3} more
+                            </span>
+                          )}
+                        </span>
+                      </span>
+                      <span className="flex items-center justify-between gap-4 sm:justify-end">
+                        <span className="text-left sm:text-right">
+                          <span className="block font-semibold tabular-nums">
+                            {formatMoney(Number(row.estimated_price))}
+                          </span>
+                          <span className="mt-1 block text-xs text-muted-foreground">
+                            {row.status}
+                          </span>
+                        </span>
+                        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           ) : (
             <p className="p-8 text-center text-sm text-muted-foreground">
               {rows.length
@@ -323,6 +312,164 @@ function Page() {
           </div>
         </div>
       )}
+      <Dialog
+        open={Boolean(selectedQuote)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedQuote(null);
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+          {selectedQuote && (
+            <>
+              <DialogHeader className="pr-8">
+                <DialogTitle className="break-words">{selectedQuote.full_name}</DialogTitle>
+                <DialogDescription>
+                  {selectedQuote.quote_id} · {formatRequestDate(selectedQuote.created_at)}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-5 py-2">
+                <section className="grid gap-4 rounded-lg border bg-muted/20 p-4 sm:grid-cols-2">
+                  <div className="min-w-0">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Contact
+                    </h3>
+                    <a
+                      className="mt-2 flex items-start gap-2 break-all text-sm text-primary hover:underline"
+                      href={`mailto:${selectedQuote.email}`}
+                    >
+                      <Mail className="mt-0.5 size-4 shrink-0" />
+                      {selectedQuote.email}
+                    </a>
+                    <a
+                      className="mt-2 flex items-center gap-2 text-sm hover:underline"
+                      href={`tel:${selectedQuote.phone.replace(/[^\d+]/g, "")}`}
+                    >
+                      <Phone className="size-4 shrink-0" />
+                      {selectedQuote.phone || "Phone not provided"}
+                    </a>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Preferred contact: {selectedQuote.preferred_contact || "Not specified"}
+                    </p>
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Business
+                    </h3>
+                    <p className="mt-2 flex items-start gap-2 break-words text-sm font-medium">
+                      <Building2 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                      {selectedQuote.business_name || "Not provided"}
+                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Industry: {selectedQuote.industry || "Not specified"}
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Stage: {selectedQuote.business_stage || "Not specified"}
+                    </p>
+                  </div>
+                </section>
+
+                <section>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Requested services
+                  </h3>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {serviceNames(selectedQuote.selected_services).length ? (
+                      serviceNames(selectedQuote.selected_services).map((service, index) => (
+                        <span
+                          key={`${selectedQuote.id}-detail-service-${index}`}
+                          className="max-w-full whitespace-normal break-words rounded-full border bg-muted/40 px-3 py-1 text-sm"
+                        >
+                          {service}
+                        </span>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No services specified.</p>
+                    )}
+                  </div>
+                </section>
+
+                <section className="rounded-lg border p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Project brief
+                    </h3>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Estimated price</p>
+                      <p className="text-lg font-semibold tabular-nums">
+                        {formatMoney(Number(selectedQuote.estimated_price))}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed">
+                    {selectedQuote.project_description || "No project description provided."}
+                  </p>
+                  <div className="mt-4 grid gap-3 border-t pt-3 text-sm sm:grid-cols-2">
+                    <p>
+                      <span className="text-muted-foreground">Timeline: </span>
+                      {selectedQuote.timeline || "Not specified"}
+                    </p>
+                    {selectedQuote.current_website && (
+                      <p className="min-w-0 break-words">
+                        <span className="text-muted-foreground">Website: </span>
+                        {selectedQuote.current_website}
+                      </p>
+                    )}
+                    {selectedQuote.online_presence && (
+                      <p className="min-w-0 break-words sm:col-span-2">
+                        <span className="text-muted-foreground">Online presence: </span>
+                        {selectedQuote.online_presence}
+                      </p>
+                    )}
+                  </div>
+                </section>
+
+                <div className="grid max-w-xs gap-1.5">
+                  <Label htmlFor="quote-detail-status">Request status</Label>
+                  <Select
+                    value={selectedQuote.status}
+                    disabled={!canUpdateStatus}
+                    onValueChange={(value) => void updateStatus(selectedQuote.id, value)}
+                  >
+                    <SelectTrigger id="quote-detail-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statuses.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {status}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                {canManage && (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        editInquiry(selectedQuote);
+                        setSelectedQuote(null);
+                      }}
+                    >
+                      <Pencil className="size-4" /> Edit request
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => void deleteInquiry(selectedQuote)}
+                    >
+                      <Trash2 className="size-4" /> Delete request
+                    </Button>
+                  </>
+                )}
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
       <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>

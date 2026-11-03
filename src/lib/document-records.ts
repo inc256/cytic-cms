@@ -12,6 +12,9 @@ export type ReceiptRecord = {
   payment_method: string;
   payment_reference: string | null;
   notes: string;
+  digital_signature_path: string | null;
+  digital_signature_user_id: string | null;
+  digital_signature_name: string | null;
   created_at: string;
 };
 

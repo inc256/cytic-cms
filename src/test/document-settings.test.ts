@@ -7,6 +7,7 @@ import {
   getDocumentCompanyDetails,
   groupDocumentSocials,
   normalizeWebsiteSettings,
+  resolveDocumentSignature,
 } from "@/lib/website-cms";
 
 describe("document settings", () => {
@@ -53,5 +54,39 @@ describe("document settings", () => {
       { label: "SWIFT", value: "EXAMPLEXX" },
       { label: "Bank address", value: "Kampala" },
     ]);
+  });
+
+  it("resolves company or employee signatures and leaves physical signatures empty", () => {
+    const signatories = [
+      {
+        user_id: "employee-1",
+        full_name: "Alex Employee",
+        job_title: "Director",
+        digital_signature_path: "signatures/employee.png",
+      },
+    ];
+
+    expect(
+      resolveDocumentSignature(false, "employee-1", "signatures/company.png", signatories),
+    ).toEqual({
+      path: null,
+      userId: null,
+      name: null,
+    });
+    expect(
+      resolveDocumentSignature(true, "company", "signatures/company.png", signatories),
+    ).toEqual({
+      path: "signatures/company.png",
+      userId: null,
+      name: "CYTIC Creatives.",
+    });
+    expect(resolveDocumentSignature(true, "employee-1", null, signatories)).toEqual({
+      path: "signatures/employee.png",
+      userId: "employee-1",
+      name: "Alex Employee",
+    });
+    expect(() => resolveDocumentSignature(true, "", null, signatories)).toThrow(
+      "Choose a signatory with a saved digital signature.",
+    );
   });
 });

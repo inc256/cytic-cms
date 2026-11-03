@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { useAuth } from "@/components/auth/auth-context";
 import { AnalyticsState } from "@/components/cms/analytics-state";
+import { DocumentSignatureSelector } from "@/components/cms/document-signature-selector";
 import { PageHeader } from "@/components/cms/primitives";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDocumentSettings } from "@/hooks/use-document-settings";
+import { useDocumentSignatories } from "@/hooks/use-document-signatories";
 import {
   createReceiptRecord,
   deleteReceiptRecord,
@@ -29,7 +31,13 @@ import {
 import { amountInWords } from "@/lib/amount-in-words";
 import { formatMoney } from "@/lib/format";
 import { addDocumentWatermark } from "@/lib/document-logo";
-import { getDocumentCompanyDetails, type DocumentSettings } from "@/lib/website-cms";
+import {
+  getDigitalSignatureDataUrl,
+  getDigitalSignatureUrl,
+  getDocumentCompanyDetails,
+  resolveDocumentSignature,
+  type DocumentSettings,
+} from "@/lib/website-cms";
 import { meta } from "@/lib/seo";
 
 export const Route = createFileRoute("/analytics/receipts")({
@@ -54,7 +62,27 @@ function ReceiptDocument({
   paidFor: string;
   settings: DocumentSettings;
 }) {
+  const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
   const companyDetails = getDocumentCompanyDetails(settings);
+  useEffect(() => {
+    let active = true;
+    setSignatureUrl(null);
+    if (receipt.digital_signature_path) {
+      void getDigitalSignatureUrl(receipt.digital_signature_path)
+        .then((url) => {
+          if (active) setSignatureUrl(url);
+        })
+        .catch((cause: unknown) => {
+          if (active)
+            toast.error(
+              `Could not load receipt signature: ${cause instanceof Error ? cause.message : String(cause)}`,
+            );
+        });
+    }
+    return () => {
+      active = false;
+    };
+  }, [receipt.digital_signature_path]);
   return (
     <article className="document-a4 relative isolate mx-auto flex min-h-[297mm] w-full max-w-[210mm] flex-col overflow-hidden bg-white text-[#1e2b3c]">
       <img
@@ -142,6 +170,29 @@ function ReceiptDocument({
           </dl>
         </section>
       )}
+      <section className="relative z-10 mx-[9.5%] mt-5 border-t border-[#d0d8e3] pt-4">
+        <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-[#0a2342]">
+          Authorized signature
+        </h2>
+        {receipt.digital_signature_path ? (
+          signatureUrl ? (
+            <img
+              src={signatureUrl}
+              alt="Digital signature"
+              className="h-16 max-w-48 object-contain object-left"
+            />
+          ) : (
+            <p className="text-xs text-[#4f6076]">Loading digital signature…</p>
+          )
+        ) : (
+          <div className="mt-8 w-56 border-t border-[#4f6076] pt-1 text-[10px] text-[#4f6076]">
+            Authorized signatory · Sign here
+          </div>
+        )}
+        {receipt.digital_signature_name && (
+          <p className="text-xs text-[#4f6076]">{receipt.digital_signature_name}</p>
+        )}
+      </section>
       <footer className="relative z-10 mt-auto px-[9.5%]">
         <div className="mt-5 h-1 bg-[#c4a15a]" />
         <p className="py-3 text-[10px] text-[#4f6076]">
@@ -305,6 +356,28 @@ async function createReceiptPdf(
       detailY += rowHeight + 1;
     }
   }
+  if (detailY + 28 > 274) {
+    pdf.addPage();
+    await addDocumentWatermark(pdf);
+    detailY = 24;
+  }
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(8);
+  pdf.setTextColor(90, 90, 90);
+  pdf.text("Authorized signature", left, detailY);
+  if (receipt.digital_signature_path) {
+    const signature = await getDigitalSignatureDataUrl(receipt.digital_signature_path);
+    pdf.addImage(signature, "PNG", left, detailY + 3, 42, 18);
+    if (receipt.digital_signature_name) {
+      pdf.setFontSize(7);
+      pdf.text(receipt.digital_signature_name, left, detailY + 25);
+    }
+  } else {
+    pdf.setDrawColor(120, 120, 120);
+    pdf.line(left, detailY + 22, left + 58, detailY + 22);
+    pdf.setFontSize(7);
+    pdf.text("Sign here", left, detailY + 27);
+  }
   pdf.setDrawColor(...gold);
   pdf.setLineWidth(1.5);
   pdf.line(left, 280, right, 280);
@@ -318,6 +391,11 @@ async function createReceiptPdf(
 function Page() {
   const { state } = useAuth();
   const { settings, error: settingsError } = useDocumentSettings();
+  const {
+    signatories,
+    error: signatoryError,
+    loading: signatoriesLoading,
+  } = useDocumentSignatories();
   const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
   const [projects, setProjects] = useState<ReceiptProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -327,6 +405,8 @@ function Page() {
   const [selected, setSelected] = useState<ReceiptRecord | ReceiptDraft | null>(null);
   const [projectChoice, setProjectChoice] = useState("other");
   const [customPaidFor, setCustomPaidFor] = useState("");
+  const [includeSignature, setIncludeSignature] = useState(false);
+  const [signatureSource, setSignatureSource] = useState("");
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -374,6 +454,18 @@ function Page() {
       toast.error("Choose a project or enter what the payment is for.");
       return;
     }
+    let signature: ReturnType<typeof resolveDocumentSignature>;
+    try {
+      signature = resolveDocumentSignature(
+        includeSignature,
+        signatureSource,
+        settings.digital_signature_path,
+        signatories,
+      );
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Choose a valid document signatory.");
+      return;
+    }
     setSaving(true);
     try {
       await createReceiptRecord({
@@ -386,11 +478,16 @@ function Page() {
         payment_method: String(form.get("payment_method")),
         payment_reference: String(form.get("payment_reference") ?? "").trim() || null,
         notes: String(form.get("notes") ?? "").trim(),
+        digital_signature_path: signature.path,
+        digital_signature_user_id: signature.userId,
+        digital_signature_name: signature.name,
       });
       toast.success("Receipt issued. Add the income separately in Income & Expenditure.");
       setCreateOpen(false);
       setProjectChoice("other");
       setCustomPaidFor("");
+      setIncludeSignature(false);
+      setSignatureSource("");
       formElement.reset();
       await refresh();
     } catch (cause) {
@@ -406,6 +503,12 @@ function Page() {
     const values = new FormData(form);
     const selectedProjectId = projectChoice === "other" ? null : projectChoice;
     const project = selectedProjectId ? projectById.get(selectedProjectId) : null;
+    const signature = resolveDocumentSignature(
+      includeSignature,
+      signatureSource,
+      settings.digital_signature_path,
+      signatories,
+    );
     return {
       client_name: String(values.get("client_name") ?? "").trim(),
       project_id: selectedProjectId,
@@ -416,6 +519,9 @@ function Page() {
       payment_method: String(values.get("payment_method") ?? ""),
       payment_reference: String(values.get("payment_reference") ?? "").trim() || null,
       notes: String(values.get("notes") ?? "").trim(),
+      digital_signature_path: signature.path,
+      digital_signature_user_id: signature.userId,
+      digital_signature_name: signature.name,
     };
   };
 
@@ -645,6 +751,18 @@ function Page() {
                   className="rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
               </div>
+              <div className="sm:col-span-2">
+                <DocumentSignatureSelector
+                  checked={includeSignature}
+                  onCheckedChange={setIncludeSignature}
+                  selection={signatureSource}
+                  onSelectionChange={setSignatureSource}
+                  signatories={signatories}
+                  companySignatureAvailable={Boolean(settings.digital_signature_path)}
+                  loading={signatoriesLoading}
+                  error={signatoryError}
+                />
+              </div>
             </div>
             <DialogFooter>
               <Button
@@ -652,7 +770,14 @@ function Page() {
                 variant="outline"
                 onClick={(event) => {
                   const form = event.currentTarget.form;
-                  if (form) setSelected(draftFromForm(form));
+                  if (!form) return;
+                  try {
+                    setSelected(draftFromForm(form));
+                  } catch (cause) {
+                    toast.error(
+                      cause instanceof Error ? cause.message : "Choose a valid document signatory.",
+                    );
+                  }
                 }}
               >
                 <Eye className="size-4" /> Preview receipt

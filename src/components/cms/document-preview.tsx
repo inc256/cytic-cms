@@ -26,6 +26,7 @@ type DocumentPreviewProps = {
   companySettings?: DocumentSettings;
   clientDetails?: { label: string; value: string }[];
   digitalSignaturePath?: string | null;
+  digitalSignatureName?: string | null;
 };
 
 export function DocumentPreview({
@@ -44,6 +45,7 @@ export function DocumentPreview({
   companySettings,
   clientDetails = [],
   digitalSignaturePath,
+  digitalSignatureName,
 }: DocumentPreviewProps) {
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
   const [signatureError, setSignatureError] = useState<string | null>(null);
@@ -212,11 +214,16 @@ export function DocumentPreview({
           {digitalSignaturePath ? (
             <>
               {signatureUrl ? (
-                <img
-                  src={signatureUrl}
-                  alt="Digital signature"
-                  className="h-16 max-w-48 object-contain object-left"
-                />
+                <>
+                  <img
+                    src={signatureUrl}
+                    alt="Digital signature"
+                    className="h-16 max-w-48 object-contain object-left"
+                  />
+                  {digitalSignatureName && (
+                    <p className="text-xs text-[#4f6076]">{digitalSignatureName}</p>
+                  )}
+                </>
               ) : signatureError ? (
                 <p role="alert" className="text-xs text-destructive">
                   Could not load digital signature: {signatureError}

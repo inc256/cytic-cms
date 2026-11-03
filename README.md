@@ -93,6 +93,13 @@ table. In General Settings, set shared company details, private invoice bank
 details, and the optional PNG signature. Matching social usernames are grouped
 into one line on quotations and invoices.
 
+To add employee signatures, run
+[`supabase/team-document-signatures.sql`](./supabase/team-document-signatures.sql)
+after the Team migration and `supabase/document-details-settings.sql`. Team
+profiles can then store a private PNG signature, and invoice, quotation, and
+receipt forms can choose a signatory or leave a physical signature line.
+Existing company signatures remain available as a signatory option.
+
 Supabase Auth persists the user's browser session and refreshes its token
 automatically. Signing out or clearing browser storage ends that session.
 

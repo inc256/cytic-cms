@@ -70,6 +70,38 @@ export type InvoiceBankSettings = {
 export type DocumentSettings = WebsiteSettings &
   InvoiceBankSettings & { digital_signature_path: string | null };
 
+export type DocumentSignatory = {
+  user_id: string;
+  full_name: string;
+  job_title: string;
+  digital_signature_path: string;
+};
+
+export type SavedDocumentSignature = {
+  path: string | null;
+  userId: string | null;
+  name: string | null;
+};
+
+export function resolveDocumentSignature(
+  enabled: boolean,
+  selection: string,
+  companySignaturePath: string | null,
+  signatories: DocumentSignatory[],
+): SavedDocumentSignature {
+  if (!enabled) return { path: null, userId: null, name: null };
+  if (selection === "company" && companySignaturePath) {
+    return { path: companySignaturePath, userId: null, name: "CYTIC Creatives." };
+  }
+  const signatory = signatories.find((candidate) => candidate.user_id === selection);
+  if (!signatory) throw new Error("Choose a signatory with a saved digital signature.");
+  return {
+    path: signatory.digital_signature_path,
+    userId: signatory.user_id,
+    name: signatory.full_name,
+  };
+}
+
 export type QuotationAnalyticsRow = {
   id: string;
   proposal_code: string;
@@ -226,27 +258,53 @@ export async function uploadDigitalSignature(file: File): Promise<string> {
   return path;
 }
 
+export async function getDocumentSignatories(): Promise<DocumentSignatory[]> {
+  const supabase = getSupabaseClient();
+  if (!supabase) throw new Error("Supabase is not configured.");
+  const result = await supabase.rpc("get_cms_document_signatories");
+  if (result.error) throw new Error(result.error.message);
+  return (result.data ?? []) as DocumentSignatory[];
+}
+
 export async function deleteDigitalSignature(path: string): Promise<boolean> {
   const supabase = getSupabaseClient();
   if (!supabase) throw new Error("Supabase is not configured.");
-  const [settingsResult, invoiceResult, proposalResult] = await Promise.all([
-    supabase
-      .from("cms_document_settings")
-      .select("id", { count: "exact", head: true })
-      .eq("digital_signature_path", path),
-    supabase
-      .from("cms_invoices")
-      .select("id", { count: "exact", head: true })
-      .eq("digital_signature_path", path),
-    supabase
-      .from("cms_proposals")
-      .select("id", { count: "exact", head: true })
-      .eq("digital_signature_path", path),
-  ]);
+  const [settingsResult, invoiceResult, proposalResult, receiptResult, teamResult] =
+    await Promise.all([
+      supabase
+        .from("cms_document_settings")
+        .select("id", { count: "exact", head: true })
+        .eq("digital_signature_path", path),
+      supabase
+        .from("cms_invoices")
+        .select("id", { count: "exact", head: true })
+        .eq("digital_signature_path", path),
+      supabase
+        .from("cms_proposals")
+        .select("id", { count: "exact", head: true })
+        .eq("digital_signature_path", path),
+      supabase
+        .from("cms_receipts")
+        .select("id", { count: "exact", head: true })
+        .eq("digital_signature_path", path),
+      supabase
+        .from("cms_team_profiles")
+        .select("user_id", { count: "exact", head: true })
+        .eq("digital_signature_path", path),
+    ]);
   if (settingsResult.error) throw new Error(settingsResult.error.message);
   if (invoiceResult.error) throw new Error(invoiceResult.error.message);
   if (proposalResult.error) throw new Error(proposalResult.error.message);
-  if (settingsResult.count || invoiceResult.count || proposalResult.count) return false;
+  if (receiptResult.error) throw new Error(receiptResult.error.message);
+  if (teamResult.error) throw new Error(teamResult.error.message);
+  if (
+    settingsResult.count ||
+    invoiceResult.count ||
+    proposalResult.count ||
+    receiptResult.count ||
+    teamResult.count
+  )
+    return false;
   const result = await supabase.storage.from(DIGITAL_SIGNATURE_BUCKET).remove([path]);
   if (result.error) throw new Error(result.error.message);
   return true;

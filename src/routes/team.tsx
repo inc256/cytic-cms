@@ -44,6 +44,11 @@ import {
 import { getSupabaseClient } from "@/lib/supabase";
 import { isCmsRole, type CmsRole } from "@/lib/cms-access";
 import { meta } from "@/lib/seo";
+import {
+  deleteDigitalSignature,
+  getDigitalSignatureUrl,
+  uploadDigitalSignature,
+} from "@/lib/website-cms";
 
 export const Route = createFileRoute("/team")({
   head: () => meta("Team", "Manage team member profiles and private documents."),
@@ -73,8 +78,10 @@ type TeamProfile = {
   national_id_number: string;
   profile_image_path: string | null;
   id_document_path: string | null;
-  profile_image_url?: string;
-  id_document_url?: string;
+  digital_signature_path: string | null;
+  profile_image_url?: string | undefined;
+  id_document_url?: string | undefined;
+  digital_signature_url?: string | undefined;
 };
 
 type ProfileForm = {
@@ -89,6 +96,7 @@ type ProfileForm = {
   national_id_number: string;
   profile_image_path: string | null;
   id_document_path: string | null;
+  digital_signature_path: string | null;
 };
 
 const emptyForm: ProfileForm = {
@@ -103,6 +111,7 @@ const emptyForm: ProfileForm = {
   national_id_number: "",
   profile_image_path: null,
   id_document_path: null,
+  digital_signature_path: null,
 };
 
 async function signedFileUrl(path: string | null): Promise<string | undefined> {
@@ -157,6 +166,7 @@ function Page() {
   const [form, setForm] = useState<ProfileForm>(emptyForm);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [idFile, setIdFile] = useState<File | null>(null);
+  const [signatureFile, setSignatureFile] = useState<File | null>(null);
 
   const loadTeam = useCallback(async () => {
     const supabase = getSupabaseClient();
@@ -184,6 +194,9 @@ function Page() {
           ...profile,
           profile_image_url: await signedFileUrl(profile.profile_image_path),
           id_document_url: await signedFileUrl(profile.id_document_path),
+          digital_signature_url: profile.digital_signature_path
+            ? await getDigitalSignatureUrl(profile.digital_signature_path)
+            : undefined,
         })),
       );
       setUsers(availableUsers);
@@ -221,6 +234,7 @@ function Page() {
     setForm(emptyForm);
     setPhotoFile(null);
     setIdFile(null);
+    setSignatureFile(null);
     setDialogOpen(true);
   };
 
@@ -238,9 +252,11 @@ function Page() {
       national_id_number: profile.national_id_number,
       profile_image_path: profile.profile_image_path,
       id_document_path: profile.id_document_path,
+      digital_signature_path: profile.digital_signature_path,
     });
     setPhotoFile(null);
     setIdFile(null);
+    setSignatureFile(null);
     setDialogOpen(true);
   };
 
@@ -252,16 +268,22 @@ function Page() {
       return;
     }
     setSaving(true);
-    const uploadedPaths: string[] = [];
+    const uploadedTeamPaths: string[] = [];
+    const uploadedSignaturePaths: string[] = [];
+    let profileSaved = false;
     try {
       const profileImagePath = photoFile
         ? await uploadTeamFile(photoFile, form.user_id, "photo")
         : form.profile_image_path;
-      if (photoFile && profileImagePath) uploadedPaths.push(profileImagePath);
+      if (photoFile && profileImagePath) uploadedTeamPaths.push(profileImagePath);
       const idDocumentPath = idFile
         ? await uploadTeamFile(idFile, form.user_id, "id")
         : form.id_document_path;
-      if (idFile && idDocumentPath) uploadedPaths.push(idDocumentPath);
+      if (idFile && idDocumentPath) uploadedTeamPaths.push(idDocumentPath);
+      const signaturePath = signatureFile
+        ? await uploadDigitalSignature(signatureFile)
+        : form.digital_signature_path;
+      if (signatureFile && signaturePath) uploadedSignaturePaths.push(signaturePath);
 
       const { error: saveError } = await supabase.from("cms_team_profiles").upsert({
         user_id: form.user_id,
@@ -275,9 +297,11 @@ function Page() {
         national_id_number: form.national_id_number.trim(),
         profile_image_path: profileImagePath,
         id_document_path: idDocumentPath,
+        digital_signature_path: signaturePath,
         updated_at: new Date().toISOString(),
       });
       if (saveError) throw new Error(saveError.message);
+      profileSaved = true;
 
       const oldProfile = profiles.find((profile) => profile.user_id === form.user_id);
       const pathsToRemove = [
@@ -291,16 +315,36 @@ function Page() {
         if (removeError)
           toast.error(`Profile saved, but old files could not be removed: ${removeError.message}`);
       }
+      if (
+        oldProfile?.digital_signature_path &&
+        oldProfile.digital_signature_path !== signaturePath
+      ) {
+        try {
+          const removed = await deleteDigitalSignature(oldProfile.digital_signature_path);
+          if (!removed)
+            toast.info("The previous signature was retained because an existing document uses it.");
+        } catch (removeError) {
+          toast.error(
+            `Profile saved, but the previous signature could not be removed: ${removeError instanceof Error ? removeError.message : String(removeError)}`,
+          );
+        }
+      }
 
       toast.success(editing ? "Team profile updated." : "Team profile created.");
       setDialogOpen(false);
       await loadTeam();
     } catch (saveError) {
-      if (uploadedPaths.length) {
+      if (!profileSaved && uploadedTeamPaths.length) {
         const { error: cleanupError } = await supabase.storage
           .from("team-private")
-          .remove(uploadedPaths);
+          .remove(uploadedTeamPaths);
         if (cleanupError) toast.error(`Uploaded file cleanup failed: ${cleanupError.message}`);
+      }
+      if (!profileSaved && uploadedSignaturePaths.length) {
+        const { error: cleanupError } = await supabase.storage
+          .from("cytic_digital_signatures")
+          .remove(uploadedSignaturePaths);
+        if (cleanupError) toast.error(`Signature upload cleanup failed: ${cleanupError.message}`);
       }
       toast.error(saveError instanceof Error ? saveError.message : "Could not save team profile.");
     } finally {
@@ -338,6 +382,17 @@ function Page() {
       if (removeError)
         toast.error(`Profile removed, but files could not be deleted: ${removeError.message}`);
     }
+    if (profile.digital_signature_path) {
+      try {
+        const removed = await deleteDigitalSignature(profile.digital_signature_path);
+        if (!removed)
+          toast.info("The signature was retained because an existing document uses it.");
+      } catch (removeError) {
+        toast.error(
+          `Profile removed, but its signature could not be deleted: ${removeError instanceof Error ? removeError.message : String(removeError)}`,
+        );
+      }
+    }
     toast.success("Team profile removed. The Auth account was not deleted.");
     setDeleting(null);
     await loadTeam();
@@ -357,7 +412,7 @@ function Page() {
     <>
       <PageHeader
         title="Team"
-        description="Maintain team profiles, contact details, and private identity records."
+        description="Maintain team profiles, contact details, employee signatures, and private identity records."
         actions={
           <>
             <Button size="sm" variant="outline" onClick={() => void loadTeam()} disabled={loading}>
@@ -375,7 +430,8 @@ function Page() {
           <ShieldCheck className="mt-0.5 size-5 shrink-0 text-primary" />
           <p className="text-sm text-muted-foreground">
             Team records must be linked to an existing Supabase Auth account. Profile photos and ID
-            documents are kept in a private bucket and are accessible only to CEO accounts.
+            documents are kept in a private bucket and are accessible only to CEO accounts. Employee
+            PNG signatures can be selected for invoices, quotations, and receipts.
           </p>
         </div>
       </Panel>
@@ -430,6 +486,7 @@ function Page() {
                 <TableHead>Role</TableHead>
                 <TableHead>Job title</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Signature</TableHead>
                 <TableHead>ID document</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -461,6 +518,9 @@ function Page() {
                     <TableCell>{user?.role ?? "Unassigned"}</TableCell>
                     <TableCell>{profile.job_title || "—"}</TableCell>
                     <TableCell>{profile.employment_status}</TableCell>
+                    <TableCell>
+                      {profile.digital_signature_path ? "Available" : "Not set"}
+                    </TableCell>
                     <TableCell>
                       {profile.id_document_url ? (
                         <a
@@ -650,6 +710,45 @@ function Page() {
                     ? "A document is saved. Choose another to replace it."
                     : "Optional · JPG, PNG, WebP, PDF · up to 20 MB"}
                 </p>
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="team-signature">Digital signature (PNG, max 2 MB)</Label>
+                <Input
+                  id="team-signature"
+                  type="file"
+                  accept="image/png,.png"
+                  onChange={(event) => setSignatureFile(event.target.files?.[0] ?? null)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {signatureFile
+                    ? `${signatureFile.name} will replace the saved signature.`
+                    : form.digital_signature_path
+                      ? "A signature is saved. Choose another PNG to replace it, or remove it below."
+                      : "Optional · PNG only · up to 2 MB"}
+                </p>
+                {form.digital_signature_path && (
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={
+                        profiles.find((profile) => profile.user_id === form.user_id)
+                          ?.digital_signature_url
+                      }
+                      alt="Saved employee signature"
+                      className="h-12 max-w-40 object-contain object-left"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSignatureFile(null);
+                        setForm((current) => ({ ...current, digital_signature_path: null }));
+                      }}
+                    >
+                      Remove signature
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
             <DialogFooter>
