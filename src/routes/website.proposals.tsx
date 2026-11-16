@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Fragment, useState, type FormEvent } from "react";
-import { ChevronDown, Eye, Pencil, Plus, Printer, Trash2 } from "lucide-react";
-import type { jsPDF } from "jspdf";
+import { Fragment, useRef, useState, type FormEvent } from "react";
+import { ChevronDown, Download, Eye, Pencil, Plus, Printer, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AnalyticsState } from "@/components/cms/analytics-state";
@@ -15,15 +14,7 @@ import { Label } from "@/components/ui/label";
 import { useDocumentSettings } from "@/hooks/use-document-settings";
 import { useDocumentSignatories } from "@/hooks/use-document-signatories";
 import { useWebsiteRows } from "@/hooks/use-website-rows";
-import {
-  deleteWebsiteRow,
-  getDigitalSignatureDataUrl,
-  getDocumentCompanyDetails,
-  resolveDocumentSignature,
-  saveWebsiteRow,
-  type DocumentSettings,
-} from "@/lib/website-cms";
-import { addDocumentWatermark } from "@/lib/document-logo";
+import { deleteWebsiteRow, resolveDocumentSignature, saveWebsiteRow } from "@/lib/website-cms";
 import { formatMoney } from "@/lib/format";
 import { meta } from "@/lib/seo";
 
@@ -55,210 +46,6 @@ type Proposal = {
   updated_at: string;
 };
 
-async function createProposalPdf(proposal: Proposal, settings: DocumentSettings): Promise<jsPDF> {
-  const { jsPDF: PdfDocument } = await import("jspdf");
-  const pdf = new PdfDocument({ orientation: "portrait", unit: "mm", format: "a4" });
-  const navy: [number, number, number] = [10, 35, 66];
-  const gold: [number, number, number] = [190, 157, 91];
-  const left = 18;
-  const right = 192;
-  const companyDetails = getDocumentCompanyDetails(settings);
-  pdf.setFillColor(...navy);
-  pdf.rect(0, 0, 210, 48, "F");
-  await addDocumentWatermark(pdf);
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(23);
-  pdf.text("QUOTATION", left, 24);
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(9);
-  pdf.setTextColor(176, 196, 222);
-  pdf.text(proposal.created_at.slice(0, 10), left, 34);
-  pdf.text(proposal.proposal_code, left, 41);
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(12);
-  pdf.text("CYTIC Creatives.", right, 22, { align: "right" });
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(7);
-  pdf.setTextColor(176, 196, 222);
-  pdf.text("Identity that hits differently", right, 29, { align: "right" });
-
-  pdf.setTextColor(90, 90, 90);
-  pdf.setFontSize(9);
-  pdf.text("PREPARED FOR", left, 62);
-  pdf.text("CYTIC DETAILS", right, 62, { align: "right" });
-  pdf.setTextColor(25, 25, 25);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(12);
-  const clientNameLines = pdf.splitTextToSize(proposal.client, 90);
-  pdf.text(clientNameLines, left, 70);
-  const clientDetails = [
-    proposal.client_address && `Address: ${proposal.client_address}`,
-    proposal.client_phone && `Tel: ${proposal.client_phone}`,
-    proposal.client_email && `Email: ${proposal.client_email}`,
-  ].filter((detail): detail is string => Boolean(detail));
-  pdf.setTextColor(90, 90, 90);
-  pdf.setFontSize(9);
-  let clientY = 70 + clientNameLines.length * 5 + 4;
-  for (const detail of clientDetails) {
-    const lines = pdf.splitTextToSize(detail, 90);
-    pdf.text(lines, left, clientY);
-    clientY += lines.length * 4 + 1;
-  }
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(8);
-  pdf.setTextColor(79, 96, 118);
-  let officeY = 70;
-  for (const detail of companyDetails) {
-    const lines = pdf.splitTextToSize(`${detail.label}: ${detail.value}`, 82);
-    pdf.text(lines, right - 82, officeY);
-    officeY += lines.length * 4 + 1;
-  }
-  const titleY = Math.max(99, clientY + 5, officeY + 5);
-  pdf.setTextColor(90, 90, 90);
-  pdf.text("TITLE", left, titleY);
-  if (proposal.valid_until) {
-    pdf.text("VALID UNTIL", right, titleY, { align: "right" });
-  }
-  pdf.setTextColor(25, 25, 25);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(11);
-  const titleLines = pdf.splitTextToSize(proposal.title, 110);
-  pdf.text(titleLines, left, titleY + 8);
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(10);
-  if (proposal.valid_until) {
-    pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(10);
-    pdf.text(proposal.valid_until, right, titleY + 8, { align: "right" });
-  }
-
-  let y = Math.max(124, titleY + 13 + titleLines.length * 5);
-  if (y > 230) {
-    pdf.addPage();
-    await addDocumentWatermark(pdf);
-    y = 32;
-  }
-  const drawTableHeader = () => {
-    pdf.setFillColor(...navy);
-    pdf.rect(left, y - 7, right - left, 11, "F");
-    pdf.setFont("helvetica", "bold");
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(9);
-    pdf.text("ITEM DESCRIPTION", left + 3, y);
-    pdf.text("TOTAL (UGX)", right - 3, y, { align: "right" });
-  };
-  drawTableHeader();
-  y += 11;
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(10);
-  pdf.setTextColor(25, 25, 25);
-  for (const item of proposal.line_items) {
-    const lines = pdf.splitTextToSize(item.description, 115);
-    const rowHeight = Math.max(9, lines.length * 5 + 3);
-    if (y + rowHeight > 245) {
-      pdf.addPage();
-      await addDocumentWatermark(pdf);
-      y = 32;
-      drawTableHeader();
-      y += 11;
-    }
-    pdf.setDrawColor(208, 216, 227);
-    pdf.rect(left, y - 5, right - left, rowHeight);
-    pdf.text(lines, left + 3, y);
-    pdf.text(formatMoney(item.amount), right - 3, y, { align: "right" });
-    y += rowHeight + 1;
-  }
-  const addTextSection = async (heading: string, value: string) => {
-    if (!value.trim()) return;
-    const lines = pdf.splitTextToSize(value.trim(), right - left - 10);
-    let remaining = lines;
-    let sectionHeading = heading;
-    while (remaining.length) {
-      if (y + 14 > 270) {
-        pdf.addPage();
-        await addDocumentWatermark(pdf);
-        y = 24;
-      }
-      const availableLines = Math.max(1, Math.floor((270 - y - 10) / 4));
-      const currentLines = remaining.slice(0, availableLines);
-      const sectionHeight = currentLines.length * 4 + 10;
-      pdf.setFillColor(247, 249, 252);
-      pdf.rect(left, y, right - left, sectionHeight, "F");
-      pdf.setDrawColor(...navy);
-      pdf.setLineWidth(0.8);
-      pdf.line(left, y, left, y + sectionHeight);
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(8);
-      pdf.setTextColor(...navy);
-      pdf.text(sectionHeading.toUpperCase(), left + 4, y + 5);
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(8);
-      pdf.setTextColor(79, 96, 118);
-      pdf.text(currentLines, left + 4, y + 10);
-      y += sectionHeight + 4;
-      remaining = remaining.slice(currentLines.length);
-      sectionHeading = `${heading} (continued)`;
-      if (remaining.length) {
-        pdf.addPage();
-        await addDocumentWatermark(pdf);
-        y = 24;
-      }
-    }
-  };
-  if (y + 22 > 262) {
-    pdf.addPage();
-    await addDocumentWatermark(pdf);
-    y = 24;
-  }
-  y += 7;
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(14);
-  pdf.setTextColor(...navy);
-  pdf.text(`TOTAL  ${formatMoney(Number(proposal.value))}`, right, y, { align: "right" });
-  y += 12;
-  await addTextSection("Notes", proposal.notes);
-  await addTextSection("Terms & Conditions", proposal.terms_conditions);
-
-  let signature: string | null = null;
-  if (proposal.digital_signature_path) {
-    signature = await getDigitalSignatureDataUrl(proposal.digital_signature_path);
-  }
-  if (y + 34 > 262) {
-    pdf.addPage();
-    await addDocumentWatermark(pdf);
-    y = 24;
-  } else {
-    y += 15;
-  }
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(8);
-  pdf.setTextColor(90, 90, 90);
-  pdf.text("Authorized signature", left, y);
-  if (signature) {
-    pdf.addImage(signature, "PNG", left, y + 3, 42, 18);
-    if (proposal.digital_signature_name) {
-      pdf.setFontSize(7);
-      pdf.text(proposal.digital_signature_name, left, y + 25);
-    }
-  } else {
-    pdf.setDrawColor(120, 120, 120);
-    pdf.line(left, y + 22, left + 58, y + 22);
-    pdf.setFontSize(7);
-    pdf.text("Sign here", left, y + 27);
-  }
-  y += 34;
-
-  pdf.setDrawColor(...gold);
-  pdf.setLineWidth(1.5);
-  pdf.line(left, 280, right, 280);
-  pdf.setTextColor(90, 90, 90);
-  pdf.setFontSize(8);
-  pdf.text("CYTIC Creatives. · Kampala, Uganda", left, 287);
-  return pdf;
-}
-
 function Page() {
   const { rows, loading, error, refresh } = useWebsiteRows<Proposal>("cms_proposals");
   const { settings: companySettings, error: settingsError } = useDocumentSettings();
@@ -285,6 +72,8 @@ function Page() {
   const [signatureSource, setSignatureSource] = useState("");
   const [previewProposal, setPreviewProposal] = useState<Proposal | null>(null);
   const [expandedItems, setExpandedItems] = useState<string | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const previewDocumentRef = useRef<HTMLElement>(null);
   const total = items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
   const companySignaturePath =
     companySettings.digital_signature_path ??
@@ -413,18 +202,134 @@ function Page() {
     }
   };
 
-  const download = async (proposal: Proposal) => {
-    if (typeof window.print === "function") {
-      window.print();
+  const downloadPdf = async (proposal: Proposal) => {
+    const previewDocument = previewDocumentRef.current;
+    if (!previewDocument) {
+      toast.error("Open the quotation preview before downloading its PDF.");
       return;
     }
+
+    setDownloadingPdf(true);
     try {
-      const pdf = await createProposalPdf(proposal, companySettings);
+      const [{ default: html2canvas }, { jsPDF: PdfDocument }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+      await document.fonts.ready;
+      const canvas = await html2canvas(previewDocument, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        onclone: (_clonedDocument, clonedElement) => {
+          const dialog = clonedElement.parentElement;
+          if (dialog) {
+            dialog.style.width = "210mm";
+            dialog.style.maxWidth = "none";
+            dialog.style.maxHeight = "none";
+            dialog.style.overflow = "visible";
+            dialog.style.padding = "0";
+          }
+          const previewElements = [clonedElement];
+          for (
+            let ancestor = clonedElement.parentElement;
+            ancestor;
+            ancestor = ancestor.parentElement
+          ) {
+            previewElements.push(ancestor);
+          }
+          previewElements.push(...clonedElement.querySelectorAll<HTMLElement>("*"));
+          const cloneWindow = _clonedDocument.defaultView;
+          const resolvedColors = new Map<string, string>();
+          const normalizeOklch = (value: string) =>
+            value.replace(/oklch\([^)]*\)/gi, (color) => {
+              const cachedColor = resolvedColors.get(color);
+              if (cachedColor) return cachedColor;
+              const probe = _clonedDocument.createElement("span");
+              probe.style.color = color;
+              _clonedDocument.body.append(probe);
+              const resolvedColor = cloneWindow?.getComputedStyle(probe).color;
+              probe.remove();
+              const safeColor =
+                resolvedColor && !resolvedColor.toLowerCase().includes("oklch")
+                  ? resolvedColor
+                  : "#1e2b3c";
+              resolvedColors.set(color, safeColor);
+              return safeColor;
+            });
+          for (const element of previewElements) {
+            const computedStyles = _clonedDocument.defaultView?.getComputedStyle(element);
+            if (!computedStyles) continue;
+            for (let index = 0; index < computedStyles.length; index += 1) {
+              const property = computedStyles.item(index);
+              const value = computedStyles.getPropertyValue(property);
+              if (!value.toLowerCase().includes("oklch(")) continue;
+              if (property.startsWith("--")) {
+                element.style.setProperty(property, normalizeOklch(value), "important");
+                continue;
+              }
+              const fallback =
+                property === "color"
+                  ? "#1e2b3c"
+                  : property === "background-color"
+                    ? "#ffffff"
+                    : property.endsWith("color")
+                      ? "#d0d8e3"
+                      : property.includes("shadow") || property.startsWith("background")
+                        ? "none"
+                        : "initial";
+              element.style.setProperty(property, fallback, "important");
+            }
+          }
+          clonedElement.style.width = "210mm";
+          clonedElement.style.minHeight = "297mm";
+          clonedElement.style.maxWidth = "none";
+          clonedElement.style.height = "auto";
+          clonedElement.style.margin = "0";
+          clonedElement.style.border = "0";
+          clonedElement.style.boxShadow = "none";
+          clonedElement.style.overflow = "visible";
+        },
+      });
+      if (!canvas.width || !canvas.height) {
+        throw new Error("The quotation preview could not be rendered.");
+      }
+
+      const pdf = new PdfDocument({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+        compress: true,
+      });
+      const pageHeight = Math.floor((canvas.width * 297) / 210);
+      for (let top = 0; top < canvas.height;) {
+        const remaining = canvas.height - top;
+        const height = remaining <= pageHeight + 10 ? remaining : pageHeight;
+        const pageCanvas = document.createElement("canvas");
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = height;
+        const context = pageCanvas.getContext("2d");
+        if (!context) throw new Error("Could not prepare a quotation PDF page.");
+        context.drawImage(canvas, 0, top, canvas.width, height, 0, 0, canvas.width, height);
+        if (top > 0) pdf.addPage();
+        pdf.addImage(
+          pageCanvas.toDataURL("image/png"),
+          "PNG",
+          0,
+          0,
+          210,
+          height >= pageHeight - 2 ? 297 : (height / canvas.width) * 210,
+          undefined,
+          "FAST",
+        );
+        top += height;
+      }
       pdf.save(`${proposal.proposal_code.replace(/[^\w.-]/g, "_")}.pdf`);
     } catch (cause) {
       toast.error(
         `Could not create quotation PDF: ${cause instanceof Error ? cause.message : String(cause)}`,
       );
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 
@@ -860,6 +765,7 @@ function Page() {
           {previewProposal && (
             <DocumentPreview
               documentType="Quotation"
+              documentRef={previewDocumentRef}
               reference={previewProposal.proposal_code}
               client={previewProposal.client}
               clientDetails={[
@@ -893,9 +799,23 @@ function Page() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => previewProposal && void download(previewProposal)}
+              disabled={downloadingPdf}
+              onClick={() => previewProposal && void downloadPdf(previewProposal)}
             >
-              <Printer className="size-4" /> Print / Save as PDF
+              <Download className="size-4" /> {downloadingPdf ? "Preparing PDF…" : "Download PDF"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (!previewDocumentRef.current) {
+                  toast.error("Open the quotation preview before printing.");
+                  return;
+                }
+                window.print();
+              }}
+            >
+              <Printer className="size-4" /> Print
             </Button>
           </div>
         </DialogContent>

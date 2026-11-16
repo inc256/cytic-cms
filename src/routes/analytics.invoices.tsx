@@ -247,6 +247,11 @@ async function createInvoicePdf(
     pdf.setFontSize(7);
     pdf.text("Sign here", left, y + 27);
   }
+  pdf.text("Received by", right - 58, y);
+  pdf.setDrawColor(120, 120, 120);
+  pdf.line(right - 58, y + 22, right, y + 22);
+  pdf.setFontSize(7);
+  pdf.text("Signature", right - 58, y + 27);
   y += 33;
 
   if (bankDetails.length) {

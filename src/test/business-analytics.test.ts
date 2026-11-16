@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { strFromU8, unzipSync } from "fflate";
 
 import {
   buildMonthlySeries,
   buildServiceAnalytics,
   buildServiceCombinations,
+  createExcelWorkbook,
   getGoalActual,
   getPreviousPeriodRange,
   getPeriodRange,
@@ -93,6 +95,20 @@ const sample: AnalyticsData = {
     },
   ],
 };
+
+describe("Excel exports", () => {
+  it("creates an Excel workbook with safe text cells and numeric cells", () => {
+    const workbook = unzipSync(
+      createExcelWorkbook([{ Client: "Cytic & Co", Total: 125, Notes: 'Approved <yes> "today"' }]),
+    );
+    const worksheet = strFromU8(workbook["xl/worksheets/sheet1.xml"]);
+
+    expect(workbook["[Content_Types].xml"]).toBeDefined();
+    expect(worksheet).toContain("Cytic &amp; Co");
+    expect(worksheet).toContain("&lt;yes&gt; &quot;today&quot;");
+    expect(worksheet).toContain('<c r="B2"><v>125</v></c>');
+  });
+});
 
 describe("business analytics calculations", () => {
   it("builds monthly series from saved transactions and quote requests", () => {

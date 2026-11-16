@@ -251,6 +251,10 @@
     background: white !important;
   }
 
+  #root {
+    display: none !important;
+  }
+
   [data-radix-portal] {
     position: static !important;
   }

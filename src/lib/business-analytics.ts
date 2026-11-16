@@ -1,3 +1,5 @@
+import { strToU8, zipSync } from "fflate";
+
 import { getSupabaseClient } from "@/lib/supabase";
 
 export type BusinessProject = {
@@ -301,18 +303,99 @@ export function percentageChange(current: number, previous: number): number | un
   return Math.round(((current - previous) / Math.abs(previous)) * 100);
 }
 
-export function downloadCsv(filename: string, rows: Record<string, string | number>[]) {
-  if (rows.length === 0) return;
+function excelColumnName(columnNumber: number): string {
+  let name = "";
+  let current = columnNumber;
+  while (current > 0) {
+    const remainder = (current - 1) % 26;
+    name = String.fromCharCode(65 + remainder) + name;
+    current = Math.floor((current - 1) / 26);
+  }
+  return name;
+}
+
+function escapeXml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+export function createExcelWorkbook(rows: Record<string, string | number>[]): Uint8Array {
+  if (rows.length === 0) throw new Error("Cannot create an Excel workbook without any rows.");
   const columns = Object.keys(rows[0]);
-  const escape = (value: string | number) => `"${String(value).replaceAll('"', '""')}"`;
-  const csv = [
-    columns.map(escape).join(","),
-    ...rows.map((row) => columns.map((key) => escape(row[key] ?? "")).join(",")),
-  ].join("\r\n");
-  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-  const link = Object.assign(document.createElement("a"), { href: url, download: filename });
+  if (columns.length === 0) throw new Error("Cannot create an Excel workbook without any columns.");
+  const tableRows = [columns, ...rows.map((row) => columns.map((column) => row[column] ?? ""))];
+  const worksheetRows = tableRows
+    .map(
+      (row, rowIndex) =>
+        `<row r="${rowIndex + 1}">${row
+          .map((value, columnIndex) => {
+            const reference = `${excelColumnName(columnIndex + 1)}${rowIndex + 1}`;
+            if (typeof value === "number" && Number.isFinite(value)) {
+              return `<c r="${reference}"><v>${value}</v></c>`;
+            }
+            return `<c r="${reference}" t="inlineStr"><is><t xml:space="preserve">${escapeXml(String(value))}</t></is></c>`;
+          })
+          .join("")}</row>`,
+    )
+    .join("");
+  const lastCell = `${excelColumnName(columns.length)}${tableRows.length}`;
+  const files = {
+    "[Content_Types].xml": strToU8(
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+        '<Default Extension="xml" ContentType="application/xml"/>' +
+        '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+        '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+        "</Types>",
+    ),
+    "_rels/.rels": strToU8(
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+        "</Relationships>",
+    ),
+    "xl/workbook.xml": strToU8(
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+        '<sheets><sheet name="Report" sheetId="1" r:id="rId1"/></sheets></workbook>',
+    ),
+    "xl/_rels/workbook.xml.rels": strToU8(
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+        "</Relationships>",
+    ),
+    "xl/worksheets/sheet1.xml": strToU8(
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+        '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+        `<dimension ref="A1:${lastCell}"/><sheetData>${worksheetRows}</sheetData></worksheet>`,
+    ),
+  };
+  return zipSync(files, { level: 6 });
+}
+
+export function downloadExcel(filename: string, rows: Record<string, string | number>[]) {
+  if (rows.length === 0 || Object.keys(rows[0]).length === 0) return;
+  const workbook = createExcelWorkbook(rows);
+  const buffer = new ArrayBuffer(workbook.byteLength);
+  new Uint8Array(buffer).set(workbook);
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = Object.assign(document.createElement("a"), {
+    href: url,
+    download: `${filename.replace(/\.(?:csv|xlsx)$/i, "")}.xlsx`,
+  });
+  document.body.append(link);
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 export async function fetchBusinessAnalytics(): Promise<AnalyticsData> {

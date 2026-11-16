@@ -85,11 +85,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "CYTIC Creatives CMS" },
+      { title: "CYTIC CMP — CYTIC Creatives CMS" },
       { name: "description", content: "Internal workspace for CYTIC Creatives." },
       { name: "author", content: "CYTIC Creatives" },
       { name: "theme-color", content: "#00075d" },
-      { property: "og:title", content: "CYTIC Creatives CMS" },
+      { property: "og:title", content: "CYTIC CMP — CYTIC Creatives CMS" },
       { property: "og:description", content: "Internal workspace for CYTIC Creatives." },
       { property: "og:type", content: "website" },
       { property: "og:image", content: "/Logo_512p.png" },
@@ -139,7 +139,7 @@ function RootComponent() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
     void navigator.serviceWorker.register("/sw.js").catch((error: unknown) => {
-      console.error("Could not register WPA service worker:", error);
+      console.error("Could not register CYTIC CMP service worker:", error);
     });
   }, []);
 

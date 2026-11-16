@@ -13,7 +13,7 @@ import { useBusinessAnalytics } from "@/hooks/use-business-analytics";
 import {
   buildMonthlySeries,
   buildServiceAnalytics,
-  downloadCsv,
+  downloadExcel,
   getGoalActual,
   getPreviousPeriodRange,
   getPeriodRange,
@@ -76,8 +76,8 @@ function Page() {
               variant="outline"
               size="sm"
               onClick={() =>
-                downloadCsv(
-                  "business-performance.csv",
+                downloadExcel(
+                  "business-performance.xlsx",
                   projectRows.map((project) => ({
                     Project: project.name,
                     Client: project.client_name,
@@ -89,7 +89,7 @@ function Page() {
                 )
               }
             >
-              <Download className="size-4" /> Export
+              <Download className="size-4" /> Export Excel
             </Button>
           </>
         }

@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { useBusinessAnalytics } from "@/hooks/use-business-analytics";
 import {
-  downloadCsv,
+  downloadExcel,
   getGoalActual,
   getProjectFinancials,
   type BusinessGoal,
@@ -351,13 +351,13 @@ function Page() {
                   size="sm"
                   disabled={!report.rows.length}
                   onClick={() =>
-                    downloadCsv(
-                      `${report.label.toLowerCase().replaceAll(" ", "-")}.csv`,
+                    downloadExcel(
+                      `${report.label.toLowerCase().replaceAll(" ", "-")}.xlsx`,
                       report.rows,
                     )
                   }
                 >
-                  <FileDown className="size-4" /> CSV
+                  <FileDown className="size-4" /> Excel
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => window.print()}>
                   PDF

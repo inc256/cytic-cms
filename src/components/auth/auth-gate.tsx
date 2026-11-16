@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from "react";
-import { useRouterState } from "@tanstack/react-router";
+import { Navigate, useRouterState } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,6 +143,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
         )}
       </AuthMessage>
     );
+  }
+
+  if (path === "/" && !canAccessPath(state.role, path)) {
+    const defaultPath = defaultPathForRole(state.role);
+    if (defaultPath !== path && canAccessPath(state.role, defaultPath)) {
+      return <Navigate to={defaultPath} replace />;
+    }
   }
 
   if (!canAccessPath(state.role, path)) {

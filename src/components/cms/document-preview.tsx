@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Ref } from "react";
 
 import { formatMoney } from "@/lib/format";
 import { getDigitalSignatureUrl } from "@/lib/website-cms";
@@ -27,6 +27,7 @@ type DocumentPreviewProps = {
   clientDetails?: { label: string; value: string }[];
   digitalSignaturePath?: string | null;
   digitalSignatureName?: string | null;
+  documentRef?: Ref<HTMLElement>;
 };
 
 export function DocumentPreview({
@@ -46,6 +47,7 @@ export function DocumentPreview({
   clientDetails = [],
   digitalSignaturePath,
   digitalSignatureName,
+  documentRef,
 }: DocumentPreviewProps) {
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
   const [signatureError, setSignatureError] = useState<string | null>(null);
@@ -76,7 +78,10 @@ export function DocumentPreview({
   }, [digitalSignaturePath]);
 
   return (
-    <article className="document-a4 relative isolate mx-auto flex min-h-[297mm] w-full max-w-[210mm] flex-col overflow-hidden border bg-white text-[#1e2b3c] shadow-sm">
+    <article
+      ref={documentRef}
+      className="document-a4 relative isolate mx-auto flex min-h-[297mm] w-full max-w-[210mm] flex-col overflow-hidden border bg-white text-[#1e2b3c] shadow-sm"
+    >
       <img
         src="/Logo_512p.png"
         alt=""
@@ -208,37 +213,51 @@ export function DocumentPreview({
           </div>
         )}
         <section className="document-document-section mb-6 border-t border-[#d0d8e3] pt-4">
-          <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-[#0a2342]">
-            Authorized signature
-          </h2>
-          {digitalSignaturePath ? (
-            <>
-              {signatureUrl ? (
+          <div className={documentType !== "Receipt" ? "grid grid-cols-2 gap-8" : ""}>
+            <div>
+              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-[#0a2342]">
+                Authorized signature
+              </h2>
+              {digitalSignaturePath ? (
                 <>
-                  <img
-                    src={signatureUrl}
-                    alt="Digital signature"
-                    className="h-16 max-w-48 object-contain object-left"
-                  />
-                  {digitalSignatureName && (
-                    <p className="text-xs text-[#4f6076]">{digitalSignatureName}</p>
+                  {signatureUrl ? (
+                    <>
+                      <img
+                        src={signatureUrl}
+                        alt="Digital signature"
+                        className="h-16 max-w-48 object-contain object-left"
+                      />
+                      {digitalSignatureName && (
+                        <p className="text-xs text-[#4f6076]">{digitalSignatureName}</p>
+                      )}
+                    </>
+                  ) : signatureError ? (
+                    <p role="alert" className="text-xs text-destructive">
+                      Could not load digital signature: {signatureError}
+                    </p>
+                  ) : (
+                    <p role="status" className="text-xs text-[#4f6076]">
+                      Loading digital signature…
+                    </p>
                   )}
                 </>
-              ) : signatureError ? (
-                <p role="alert" className="text-xs text-destructive">
-                  Could not load digital signature: {signatureError}
-                </p>
               ) : (
-                <p role="status" className="text-xs text-[#4f6076]">
-                  Loading digital signature…
-                </p>
+                <div className="mt-8 w-56 border-t border-[#4f6076] pt-1 text-[10px] text-[#4f6076]">
+                  Authorized signatory · Sign here
+                </div>
               )}
-            </>
-          ) : (
-            <div className="mt-8 w-56 border-t border-[#4f6076] pt-1 text-[10px] text-[#4f6076]">
-              Authorized signatory · Sign here
             </div>
-          )}
+            {documentType !== "Receipt" && (
+              <div>
+                <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-[#0a2342]">
+                  Received by
+                </h2>
+                <div className="mt-8 w-full border-t border-[#4f6076] pt-1 text-[10px] text-[#4f6076]">
+                  Signature
+                </div>
+              </div>
+            )}
+          </div>
         </section>
         <footer className="mt-auto border-t-2 border-[#c4a15a] pt-4 text-[10px] leading-relaxed text-[#4f6076]">
           <p className="font-bold uppercase tracking-wide text-[#0a2342]">CYTIC Creatives.</p>

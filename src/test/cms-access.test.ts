@@ -86,6 +86,14 @@ describe("CMS role access", () => {
     expect(canAccessPath("DESIGNER", "/")).toBe(false);
   });
 
+  it("chooses an accessible initial route for every role", () => {
+    for (const role of CMS_ROLES) {
+      expect(canAccessPath(role, defaultPathForRole(role))).toBe(true);
+    }
+    expect(defaultPathForRole("CONTENT EDITOR")).toBe("/website/portfolio");
+    expect(defaultPathForRole("DESIGNER")).toBe("/designer-workspace");
+  });
+
   it("limits business analytics to CEO, finance, and secretary", () => {
     expect(canAccessPath("INVESTOR", "/analytics/finance")).toBe(false);
     expect(canAccessPath("PARTNER", "/analytics/finance")).toBe(false);

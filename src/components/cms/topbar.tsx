@@ -52,7 +52,7 @@ export function Topbar() {
       await installPrompt.userChoice;
     } catch (error) {
       toast.error(
-        `Could not install WPA: ${error instanceof Error ? error.message : String(error)}`,
+        `Could not install CYTIC CMP: ${error instanceof Error ? error.message : String(error)}`,
       );
     } finally {
       setInstallPrompt(null);
@@ -91,7 +91,7 @@ export function Topbar() {
         {installPrompt && (
           <Button variant="outline" size="sm" onClick={() => void installApp()}>
             <Download className="size-4" />
-            <span className="hidden sm:inline">Install WPA</span>
+            <span className="hidden sm:inline">Install CYTIC CMP</span>
           </Button>
         )}
         <Button

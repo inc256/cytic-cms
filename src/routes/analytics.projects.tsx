@@ -18,7 +18,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useBusinessAnalytics } from "@/hooks/use-business-analytics";
 import { useWebsiteRows } from "@/hooks/use-website-rows";
-import { downloadCsv, getProjectFinancials, type BusinessProject } from "@/lib/business-analytics";
+import {
+  downloadExcel,
+  getProjectFinancials,
+  type BusinessProject,
+} from "@/lib/business-analytics";
 import type { WebsiteService } from "@/lib/website-cms";
 import { formatMoney } from "@/lib/format";
 import { getSupabaseClient } from "@/lib/supabase";
@@ -173,8 +177,8 @@ function Page() {
               variant="outline"
               size="sm"
               onClick={() =>
-                downloadCsv(
-                  "projects.csv",
+                downloadExcel(
+                  "projects.xlsx",
                   projects.map((project) => ({
                     Reference: project.project_code,
                     Project: project.name,
@@ -191,7 +195,7 @@ function Page() {
               }
               disabled={!projects.length}
             >
-              <Download className="size-4" /> Export
+              <Download className="size-4" /> Export Excel
             </Button>
             {canManage && (
               <Button size="sm" onClick={() => openProject()}>

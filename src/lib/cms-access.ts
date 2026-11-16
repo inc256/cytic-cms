@@ -62,7 +62,9 @@ export function canAccessPath(role: CmsRole | null, path: string): boolean {
   }
 }
 
-export function defaultPathForRole(role: CmsRole): string {
+export type CmsDefaultPath = "/" | "/website/portfolio" | "/designer-workspace";
+
+export function defaultPathForRole(role: CmsRole): CmsDefaultPath {
   if (role === "CONTENT EDITOR") return "/website/portfolio";
   if (role === "DESIGNER") return "/designer-workspace";
   return "/";

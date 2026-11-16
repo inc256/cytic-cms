@@ -24,7 +24,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useBusinessAnalytics } from "@/hooks/use-business-analytics";
-import { downloadCsv, sumTransactions, type FinancialTransaction } from "@/lib/business-analytics";
+import {
+  downloadExcel,
+  sumTransactions,
+  type FinancialTransaction,
+} from "@/lib/business-analytics";
 import { formatMoney } from "@/lib/format";
 import { getSupabaseClient } from "@/lib/supabase";
 import { useAuth } from "@/components/auth/auth-context";
@@ -186,8 +190,8 @@ function Page() {
               size="sm"
               variant="outline"
               onClick={() =>
-                downloadCsv(
-                  "financial-transactions.csv",
+                downloadExcel(
+                  "financial-transactions.xlsx",
                   rows.map((item) => ({
                     Reference: item.transaction_ref,
                     Date: item.transaction_date,
@@ -202,7 +206,7 @@ function Page() {
                 )
               }
             >
-              <Download className="size-4" /> Export
+              <Download className="size-4" /> Export Excel
             </Button>
             {canRecord && (
               <Dialog open={open} onOpenChange={setOpen}>
